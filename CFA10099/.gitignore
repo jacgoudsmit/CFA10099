@@ -26,8 +26,9 @@ bld/
 # Atmel/Visual Studio cache/options directory
 .vs/
 
-# VisualMicro helper directory
+# VisualMicro helper directories
 __vm/
+.vmpreproc/
  
 *_i.c
 *_p.c
