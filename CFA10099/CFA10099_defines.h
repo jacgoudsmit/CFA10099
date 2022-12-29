@@ -168,6 +168,7 @@
 // Debug LED, or used for scope trigger or precise timing
 #define DEBUG_LED   (3)
 
+#if defined(__AVR__)
 //Faster direct port access (specific to AVR)
 #define CLR_EVE_PD_NOT        (PORTB &= ~(0x01))
 #define SET_EVE_PD_NOT        (PORTB |=  (0x01))
@@ -175,13 +176,30 @@
 #define SET_EVE_CS_NOT        (PORTB |=  (0x02))
 #define CLR_SD_CS_NOT         (PORTB &= ~(0x04))
 #define SET_SD_CS_NOT         (PORTB |=  (0x04))
-#define CLR_MOSI              (PORTB &= ~(0x08))
-#define SET_MOSI              (PORTB |=  (0x08))
-#define CLR_MISO              (PORTB &= ~(0x10))
-#define SET_MISO              (PORTB |=  (0x10))
-#define CLR_SCK               (PORTB &= ~(0x20))
-#define SET_SCK               (PORTB |=  (0x20))
+// #define CLR_MOSI              (PORTB &= ~(0x08))
+// #define SET_MOSI              (PORTB |=  (0x08))
+// #define CLR_MISO              (PORTB &= ~(0x10))
+// #define SET_MISO              (PORTB |=  (0x10))
+// #define CLR_SCK               (PORTB &= ~(0x20))
+// #define SET_SCK               (PORTB |=  (0x20))
 #define CLR_DEBUG_LED         (PORTD &= ~(0x08))
 #define SET_DEBUG_LED         (PORTD |=  (0x08))
+#else
+#define CLR_EVE_PD_NOT        digitalWrite(EVE_PD_NOT, LOW)
+#define SET_EVE_PD_NOT        digitalWrite(EVE_PD_NOT, HIGH)
+#define CLR_EVE_CS_NOT        digitalWrite(EVE_CS_NOT, LOW)
+#define SET_EVE_CS_NOT        digitalWrite(EVE_CS_NOT, HIGH)
+#define CLR_SD_CS_NOT         digitalWrite(SD_CS, LOW)
+#define SET_SD_CS_NOT         digitalWrite(SD_CS, HIGH)
+// #define CLR_MOSI              (PORTB &= ~(0x08))
+// #define SET_MOSI              (PORTB |=  (0x08))
+// #define CLR_MISO              (PORTB &= ~(0x10))
+// #define SET_MISO              (PORTB |=  (0x10))
+// #define CLR_SCK               (PORTB &= ~(0x20))
+// #define SET_SCK               (PORTB |=  (0x20))
+#define CLR_DEBUG_LED         digitalWrite(DEBUG_LED, LOW)
+#define SET_DEBUG_LED         digitalWrite(DEBUG_LED, HIGH)
+
+#endif
 //============================================================================
 #endif // __CFA10099_DEFINES_H__
