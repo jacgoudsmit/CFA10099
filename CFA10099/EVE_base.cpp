@@ -1032,7 +1032,7 @@ void Read_and_Dump_Touch_Matrix(const __FlashStringHelper *message)
 #if ((EVE_TOUCH_TYPE!=EVE_TOUCH_NONE) && (0 == EVE_TOUCH_CAL_NEEDED))
 void Force_Touch_Matrix(void)
   {
-  const int32_t touch_transform[6] PROGMEM =
+  static const int32_t touch_transform[6] PROGMEM =
     {
     0x00010000, // [A] =     1.0000
     0x00000000, // [B] =     0.0000
