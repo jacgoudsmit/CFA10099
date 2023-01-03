@@ -37,12 +37,41 @@ void _EVE_send_32(uint32_t Data);
 void EVE_REG_Write_8(uint32_t REG_Address, uint8_t ftData8);
 void EVE_REG_Write_16(uint32_t REG_Address, uint16_t ftData16);
 void EVE_REG_Write_32(uint32_t REG_Address, uint32_t ftData32);
-uint16_t EVE_Cmd_Dat_0(uint16_t FWol,
-                       uint32_t command);
-uint16_t EVE_Cmd_Dat_1(uint16_t FWol,
-                       uint32_t command,uint32_t data0);
-uint16_t EVE_Cmd_Dat_2(uint16_t FWol,
-                       uint32_t command,uint32_t data0, uint32_t data1);
+
+//---------------------------------------------------------------------------
+// Send a command with no data, then de-select the display
+uint16_t                                // Returns new write address
+EVE_Cmd_Dat_0(
+    uint16_t FWol,                      // Write address
+    uint32_t command);                  // Command
+
+//---------------------------------------------------------------------------
+// Send a command with one parameter, then de-select the display
+uint16_t                                // Returns new write address
+EVE_Cmd_Dat_1(
+    uint16_t FWol,                      // Write address
+    uint32_t command,                   // Command
+    uint32_t data0);                    // First parameter
+
+//---------------------------------------------------------------------------
+// Send a command with two parameters, then de-select the display
+uint16_t                                // Returns new write address
+EVE_Cmd_Dat_2(
+    uint16_t FWol,                      // Write address
+    uint32_t command,                   // Command
+    uint32_t data0,                     // First parameter
+    uint32_t data1);                    // Second parameter
+
+//---------------------------------------------------------------------------
+// Send a command with three parameters, then de-select the display
+uint16_t                                // Returns new write address
+EVE_Cmd_Dat_3(
+    uint16_t FWol,                      // Write address
+    uint32_t command,                   // Command
+    uint32_t data0,                     // First parameter
+    uint32_t data1,                     // Second parameter
+    uint32_t data2);                    // Third parameter
+
 uint8_t EVE_REG_Read_8(uint32_t REG_Address);
 uint16_t EVE_REG_Read_16(uint32_t REG_Address);
 uint32_t EVE_REG_Read_32(uint32_t REG_Address);
@@ -102,14 +131,14 @@ void SerPrintFF(const __FlashStringHelper *fmt, ... );
 #endif
 
 #if (DEBUG_LEVEL == DEBUG_STATUS)
-    #define    DBG_STAT(f,...)    SerPrintFF(F(f),##__VA_ARGS__)
+    #define    DBG_STAT(f,...)    SerPrintFF(F(f ""),##__VA_ARGS__)
     #define    DBG_GEEK(f,...)
     #define    DBG_GEEK_READ_AND_DUMP_TOUCH_MATRIX(m)
 #endif
 
 #if (DEBUG_LEVEL == DEBUG_GEEK)
-    #define    DBG_STAT(f,...)    SerPrintFF(F(f),##__VA_ARGS__)
-    #define    DBG_GEEK(f,...)    SerPrintFF(F(f),##__VA_ARGS__)
+    #define    DBG_STAT(f,...)    SerPrintFF(F(f ""),##__VA_ARGS__)
+    #define    DBG_GEEK(f,...)    SerPrintFF(F(f ""),##__VA_ARGS__)
     #define    DBG_GEEK_READ_AND_DUMP_TOUCH_MATRIX(m) Read_and_Dump_Touch_Matrix(F(m))
 #endif
 //============================================================================
