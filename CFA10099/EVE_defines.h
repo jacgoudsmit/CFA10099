@@ -112,7 +112,7 @@
 #define EVE_CMD_SIZE          (4)       //4 byte per coprocessor command of EVE
 
 //## FT80x #########################################################################################
-#if ((EVE_DEVICE == FT800) || (EVE_DEVICE == FT801))
+#if ((EVE_DEVICE == EVE_FT800) || (EVE_DEVICE == EVE_FT801))
 
 #define FT800_VERSION "1.9.0".
 
@@ -406,7 +406,7 @@
 #endif // ((EVE_DEVICE == FT800) || (EVE_DEVICE == FT801))
 
 //## FT81x #########################################################################################
-#if ((EVE_DEVICE == FT810) ||(EVE_DEVICE == FT811) ||(EVE_DEVICE == FT812) || (EVE_DEVICE == FT813))
+#if ((EVE_DEVICE == EVE_FT810) ||(EVE_DEVICE == EVE_FT811) ||(EVE_DEVICE == EVE_FT812) || (EVE_DEVICE == EVE_FT813))
 
 #define EVE_VERSION "1.0.4"
 
@@ -758,7 +758,7 @@
 #endif // ((EVE_DEVICE == FT810) ||(EVE_DEVICE == FT811) ||(EVE_DEVICE == FT812) || (EVE_DEVICE == FT813))
 
 //## BT81x #########################################################################################
-#if ((EVE_DEVICE == BT815) ||(EVE_DEVICE == BT816) ||(EVE_DEVICE == BT817) || (EVE_DEVICE == BT818))
+#if ((EVE_DEVICE == EVE_BT815) ||(EVE_DEVICE == EVE_BT816) ||(EVE_DEVICE == EVE_BT817) || (EVE_DEVICE == EVE_BT818))
 
 #define EVE_LOW_FREQ_BOUND              (58800000L)    //98% of 60Mhz
 

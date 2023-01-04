@@ -55,19 +55,19 @@
 #define EVE_CAP_DEV_FT5316   (2)
 
 //My defines for the chip type, matches the 3rd byte of EVE_CHIP_ID_ADDRESS
-#define FT800 (0x00)
-#define FT801 (0x01)
-#define FT810 (0x10)
-#define FT811 (0x11)
-#define FT812 (0x12)
-#define FT813 (0x13)
-#define BT815 (0x15)
-#define BT816 (0x16)
-#define BT817 (0x17)
-#define BT818 (0x18)
+#define EVE_FT800 (0x00)
+#define EVE_FT801 (0x01)
+#define EVE_FT810 (0x10)
+#define EVE_FT811 (0x11)
+#define EVE_FT812 (0x12)
+#define EVE_FT813 (0x13)
+#define EVE_BT815 (0x15)
+#define EVE_BT816 (0x16)
+#define EVE_BT817 (0x17)
+#define EVE_BT818 (0x18)
 //============================================================================
 // These defines describe the board and EVE accelerator.
-#define EVE_DEVICE           (FT811)
+#define EVE_DEVICE           (EVE_FT811)
 #define EVE_CLOCK_SOURCE     (EVE_CLOCK_SOURCE_INTERNAL)
 #define EVE_CLOCK_MUL        (EVE_EXTERNAL_CLOCK_MUL_UNUSED)
 #define EVE_CLOCK_SPEED      ((uint32_t)60000000)
@@ -91,9 +91,9 @@
 #define SOUND_DEMO           (0)  //Uses uSD
 #define   SOUND_VOICE        (0)  //1=VOI_8K.RAW, 0=MUS_8K.RAW
 #define   SOUND_PLAY_TIMES   (10)
-#define LOGO_DEMO            (1)  //Rotating logo (image in flash, no uSD)
-#define LOGO_PNG_0_ARGB2_1   (1)  //Compressed ARGB is 5498 bytes smaller
-#define BOUNCE_DEMO          (1)  //Ball-and-rubber-band demo.
+#define LOGO_DEMO            (0)  //Rotating logo (image in flash, no uSD)
+#define LOGO_PNG_0_ARGB2_1   (0)  //Compressed ARGB is 5498 bytes smaller
+#define BOUNCE_DEMO          (0)  //Ball-and-rubber-band demo.
 #define MARBLE_DEMO          (0)  //Uses uSD - spinning earth
 #define TOUCH_DEMO           (0)
 //============================================================================
@@ -113,17 +113,17 @@
 //============================================================================
 // Throw an error if the controller does not match the touch type.
 #if ((EVE_TOUCH_TYPE == EVE_TOUCH_RESISTIVE) && \
-     ((EVE_DEVICE == FT801) || \
-      (EVE_DEVICE == FT811) || \
-      (EVE_DEVICE == FT813) || \
+     ((EVE_DEVICE == EVE_FT801) || \
+      (EVE_DEVICE == EVE_FT811) || \
+      (EVE_DEVICE == EVE_FT813) || \
       (EVE_DEVICE == FT815) || \
       (EVE_DEVICE == FT817)))
   #error Cannot specify EVE_TOUCH_RESISTIVE for an EVE_DEVICE that only supports capacitive touch.
 #endif
 #if ((EVE_TOUCH_TYPE == EVE_TOUCH_CAPACITIVE) && \
-     ((EVE_DEVICE == FT800) || \
-      (EVE_DEVICE == FT810) || \
-      (EVE_DEVICE == FT812) || \
+     ((EVE_DEVICE == EVE_FT800) || \
+      (EVE_DEVICE == EVE_FT810) || \
+      (EVE_DEVICE == EVE_FT812) || \
       (EVE_DEVICE == FT816) || \
       (EVE_DEVICE == FT818)))
   #error Cannot specify EVE_TOUCH_CAPACITIVE for an EVE_DEVICE that only supports resistive touch.

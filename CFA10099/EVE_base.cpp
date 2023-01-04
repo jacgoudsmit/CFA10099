@@ -427,7 +427,7 @@ void EVE_Read_Array(uint32_t EVE_Address, uint16_t length, uint8_t *destination)
 #if (0 != ROBUST_EXECUTION_COMPLETE)
 uint16_t Reset_EVE_Coprocessor(void)
 {
-    #if ((EVE_DEVICE==BT815)||(EVE_DEVICE==BT816)||(EVE_DEVICE==BT817)||(EVE_DEVICE==BT818))
+    #if ((EVE_DEVICE==EVE_BT815)||(EVE_DEVICE==EVE_BT816)||(EVE_DEVICE==EVE_BT817)||(EVE_DEVICE==EVE_BT818))
     #if (DEBUG_LEVEL != DEBUG_NONE)
     // If debug is on, and we are a BT81x, read the error string from
     //the BT81x and spool to the console
@@ -473,7 +473,7 @@ uint16_t Reset_EVE_Coprocessor(void)
     //EVE_REG_Write_16(EVE_REG_CMD_READ,FWol);
     //EVE_REG_Write_16(EVE_REG_CMD_WRITE,FWol);
 
-    #if ((EVE_DEVICE==BT815)||(EVE_DEVICE==BT816)||(EVE_DEVICE==BT817)||(EVE_DEVICE==BT818))
+    #if ((EVE_DEVICE==EVE_BT815)||(EVE_DEVICE==EVE_BT816)||(EVE_DEVICE==EVE_BT817)||(EVE_DEVICE==EVE_BT818))
     // Complete the BT81x steps.
     // Write the patch address read earlier back to the chip.
     EVE_REG_Write_16(EVE_REG_COPRO_PATCH_PTR, copro_patch_pointer);

@@ -19,7 +19,7 @@ display size.
 
 class StEVE
 {
-    public:
+public:
     //-----------------------------------------------------------------------
     // Memory locations
     const uint32_t CHIP_ID_ADDRESS              = 0x000C0000UL; // Datasheet 5.2 p.45
@@ -155,56 +155,59 @@ class StEVE
     // Display list command encoding
     #define E(value, mask, shift) (((value) & (mask)) << (shift))
     #define C(command) ((command) << 24)
-    #define ENC_ALPHA_FUNC(func,ref)                         (C(0x09) | E(func,          0x07UL,       8)  | E(ref,           0xffUL,   0))
-    #define ENC_BEGIN(prim)                                  (C(0x1f) | E(prim,          0x0FUL,       0))
-    #define ENC_BITMAP_HANDLE(handle)                        (C(0x05) | E(handle,        0x1fUL,       0))
-    #define ENC_BITMAP_LAYOUT_H(linestride,height)           (C(0x28) | E(linestride,    0x03UL,       2)  | E(height,        0x3UL,    0))
-    #define ENC_BITMAP_LAYOUT(format,linestride,height)      (C(0x07) | E(format,        0x1fUL,       19) | E(linestride,    0x3ffUL,  9)  | E(height,        0x1ffUL, 0))
-    #define ENC_BITMAP_SIZE_H(width,height)                  (C(0x29) | E(width,         0x3UL,        2)  | E(height,        0x3UL,    0))
-    #define ENC_BITMAP_SIZE(filter,wrapx,wrapy,width,height) (C(0x08) | E(filter,        0x1UL,        20) | E(wrapx,         0x1UL,    19) | E(wrapy,         0x1UL,   18) | E(width, 0x1ffUL, 9) | E(height, 0x1ffUL, 0))
-    #define ENC_BITMAP_SOURCE(addr)                          (C(0x01) | E(addr,          0x3FFFFFUL,   0))
-    #define ENC_BITMAP_TRANSFORM_A(a)                        (C(0x15) | E((uint32_t)(a), 0x1FFFFUL,    0))
-    #define ENC_BITMAP_TRANSFORM_B(b)                        (C(0x16) | E((uint32_t)(b), 0x1FFFFUL,    0))
-    #define ENC_BITMAP_TRANSFORM_C(c)                        (C(0x17) | E((uint32_t)(c), 0xFFFFFFUL,   0))
-    #define ENC_BITMAP_TRANSFORM_D(d)                        (C(0x18) | E((uint32_t)(d), 0x1FFFFUL,    0))
-    #define ENC_BITMAP_TRANSFORM_E(e)                        (C(0x19) | E((uint32_t)(e), 0x1FFFFUL,    0))
-    #define ENC_BITMAP_TRANSFORM_F(f)                        (C(0x1a) | E((uint32_t)(f), 0xFFFFFFUL,   0))
-    #define ENC_BLEND_FUNC(src,dst)                          (C(0x0b) | E(src,           0x7UL,        3)  | E(dst,           0x7UL,    0))
-    #define ENC_CALL(dest)                                   (C(0x1d) | E(dest,          0xFFFFUL,     0))
-    #define ENC_CELL(cell)                                   (C(0x06) | E(cell,          0x7fUL,       0))
-    #define ENC_CLEAR_COLOR_A(alpha)                         (C(0x0f) | E(alpha,         0xffUL,       0))
-    #define ENC_CLEAR_COLOR_RGB(red,green,blue)              (C(0x02) | E(red,           0xffUL,       16) | E(green,         0xffUL,   8)  | E(blue,          0xffUL,  0))
-    #define ENC_CLEAR_COLOR(c)                               (C(0x02) | E((uint32_t)(c), 0x00ffffffUL, 0)
-    #define ENC_CLEAR_STENCIL(s)                             (C(0x11) | E((uint32_t)(s), 0xffUL,       0))
-    #define ENC_CLEAR_TAG(s)                                 (C(0x12) | E((uint32_t)(s), 0xffUL,       0))
-    #define ENC_CLEAR(c,s,t)                                 (C(0x26) | E((uint32_t)(c), 0x1UL,        2)  | E((uint32_t)(s), 0x1UL,    1)  | E((uint32_t)(t), 0x1UL,   0))
-    #define ENC_COLOR_A(alpha)                               (C(0x10) | E(alpha)         0xffUL,       0))
-    #define ENC_COLOR_MASK(r,g,b,a)                          (C(0x20) | E((uint32_t)(r), 0x1UL,        3)  | E((uint32_t)(g), 0x1UL,    2)  | E((uint32_t)(b), 0x1UL,   1)  | E((uint32_t)(a),  0x1UL, 0))
-    #define ENC_COLOR_RGB(red,green,blue)                    (C(0x04) | E(red)           0xffUL,       16) | E(green,         0xffUL,   8)  | E(blue,          0xffUL,  0))
-    #define ENC_COLOR(c)                                     (C(0x04) | E((uint32_t)(c), 0x00ffffffUL, 0)
-    #define ENC_DISPLAY()                                    (C(0x00))
-    #define ENC_END()                                        (C(0x21))
-    #define ENC_JUMP(dest)                                   (C(0x1e) | E(dest,          0xFFFFUL,     0))
-    #define ENC_LINE_WIDTH(width)                            (C(0x0e) | E(width,         0xFFFUL,      0))
-    #define ENC_MACRO(m)                                     (C(0x25) | E((uint32_t)(m), 0x1UL,        0))
-    #define ENC_NOP()                                        (C(0x2d))
-    #define ENC_PALETTE_SOURCE(addr)                         (C(0x2a) | E(addr,          0x3FFFFFUL,   0))
-    #define ENC_POINT_SIZE(size)                             (C(0x0d) | E(size,          0x1FFFUL,     0))
-    #define ENC_RESTORE_CONTEXT()                            (C(0x23))
-    #define ENC_RETURN()                                     (C(0x24))
-    #define ENC_SAVE_CONTEXT()                               (C(0x22))
-    #define ENC_SCISSOR_SIZE(width,height)                   (C(0x1c) | E(width,         0xFFFUL,      12) | E(height,        0xFFFUL,  0))
-    #define ENC_SCISSOR_XY(x,y)                              (C(0x1b) | E((uint32_t)(x), 0x7FFUL,      11) | E((uint32_t)(y), 0x7FFUL,  0))
-    #define ENC_STENCIL_FUNC(func,ref,mask)                  (C(0x0a) | E(func,          0x7UL,        16) | E(ref,           0xffUL,   8) | E(mask,            0xffUL, 0))
-    #define ENC_STENCIL_MASK(mask)                           (C(0x13) | E(mask,          0xffUL,       0))
-    #define ENC_STENCIL_OP(sfail,spass)                      (C(0x0c) | E(sfail,         0x7UL,        3)  | E(spass,         0x7UL,    0))
-    #define ENC_TAG_MASK(mask)                               (C(0x14) | E(mask,          0x1UL,        0))
-    #define ENC_TAG(s)                                       (C(0x03) | E((uint32_t)(s), 0xffUL,       0))
-    #define ENC_VERTEX_FORMAT(frac)                          (C(0x27) | E(frac,          0x7UL,        0))
-    #define ENC_VERTEX_TRANSLATE_X(x)                        (C(0x2b) | E((uint32_t)(x), 0x1FFFFUL,    0))
-    #define ENC_VERTEX_TRANSLATE_Y(y)                        (C(0x2c) | E((uint32_t)(y), 0x1FFFFUL,    0))
-    #define ENC_VERTEX2F(x,y)                                (C(0x40) | E((uint32_t)(x), 0xffffUL,     15) | E((uint32_t)(y), 0xffffUL, 0))
-    #define ENC_VERTEX2II(x,y,handle,cell)                   (C(0x80) | E((uint32_t)(x), 0x1ffUL,      21) | E((uint32_t)(y), 0x1ffUL,  12) | E(handle, 0x1fUL, 7) | E(cell, 0x7fUL << 0))
+    #define ENC(name, ...) uint32_t ENC_##name(__VA_ARGS__)
+    ENC(ALPHA_FUNC        , uint32_t func, uint32_t ref)                                                        { return (C(0x09) | E(func,       0x07UL,       8)  | E(ref,        0xffUL,   0))                                                                          ; }
+    ENC(BEGIN             , uint32_t prim)                                                                      { return (C(0x1f) | E(prim,       0x0FUL,       0))                                                                                                        ; }
+    ENC(BITMAP_HANDLE     , uint32_t handle)                                                                    { return (C(0x05) | E(handle,     0x1fUL,       0))                                                                                                        ; }
+    ENC(BITMAP_LAYOUT_H   , uint32_t linestride, uint32_t height)                                               { return (C(0x28) | E(linestride, 0x03UL,       2)  | E(height,     0x3UL,    0))                                                                          ; }
+    ENC(BITMAP_LAYOUT     , uint32_t format, uint32_t linestride, uint32_t height)                              { return (C(0x07) | E(format,     0x1fUL,       19) | E(linestride, 0x3ffUL,  9)  | E(height, 0x1ffUL, 0))                                                 ; }
+    ENC(BITMAP_SIZE_H     , uint32_t width, uint32_t height)                                                    { return (C(0x29) | E(width,      0x3UL,        2)  | E(height,     0x3UL,    0))                                                                          ; }
+    ENC(BITMAP_SIZE       , uint32_t filter, uint32_t wrapx, uint32_t wrapy, uint32_t width, uint32_t height)   { return (C(0x08) | E(filter,     0x1UL,        20) | E(wrapx,      0x1UL,    19) | E(wrapy,  0x1UL,   18) | E(width, 0x1ffUL, 9) | E(height, 0x1ffUL, 0)) ; }
+    ENC(BITMAP_SOURCE     , uint32_t addr)                                                                      { return (C(0x01) | E(addr,       0x3FFFFFUL,   0))                                                                                                        ; }
+    ENC(BITMAP_TRANSFORM_A, uint32_t a)                                                                         { return (C(0x15) | E(a,          0x1FFFFUL,    0))                                                                                                        ; }
+    ENC(BITMAP_TRANSFORM_B, uint32_t b)                                                                         { return (C(0x16) | E(b,          0x1FFFFUL,    0))                                                                                                        ; }
+    ENC(BITMAP_TRANSFORM_C, uint32_t c)                                                                         { return (C(0x17) | E(c,          0xFFFFFFUL,   0))                                                                                                        ; }
+    ENC(BITMAP_TRANSFORM_D, uint32_t d)                                                                         { return (C(0x18) | E(d,          0x1FFFFUL,    0))                                                                                                        ; }
+    ENC(BITMAP_TRANSFORM_E, uint32_t e)                                                                         { return (C(0x19) | E(e,          0x1FFFFUL,    0))                                                                                                        ; }
+    ENC(BITMAP_TRANSFORM_F, uint32_t f)                                                                         { return (C(0x1a) | E(f,          0xFFFFFFUL,   0))                                                                                                        ; }
+    ENC(BLEND_FUNC        , uint32_t src, uint32_t dst)                                                         { return (C(0x0b) | E(src,        0x7UL,        3)  | E(dst,        0x7UL,    0))                                                                          ; }
+    ENC(CALL              , uint32_t dest)                                                                      { return (C(0x1d) | E(dest,       0xFFFFUL,     0))                                                                                                        ; }
+    ENC(CELL              , uint32_t cell)                                                                      { return (C(0x06) | E(cell,       0x7fUL,       0))                                                                                                        ; }
+    ENC(CLEAR_COLOR_A     , uint32_t alpha)                                                                     { return (C(0x0f) | E(alpha,      0xffUL,       0))                                                                                                        ; }
+    ENC(CLEAR_COLOR_RGB   , uint32_t red, uint32_t green, uint32_t blue)                                        { return (C(0x02) | E(red,        0xffUL,       16) | E(green,      0xffUL,   8)  | E(blue,   0xffUL,  0))                                                 ; }
+    ENC(CLEAR_COLOR       , uint32_t c)                                                                         { return (C(0x02) | E(c,          0x00ffffffUL, 0))                                                                                                        ; }
+    ENC(CLEAR_STENCIL     , uint32_t s)                                                                         { return (C(0x11) | E(s,          0xffUL,       0))                                                                                                        ; }
+    ENC(CLEAR_TAG         , uint32_t s)                                                                         { return (C(0x12) | E(s,          0xffUL,       0))                                                                                                        ; }
+    ENC(CLEAR             , uint32_t c, uint32_t s, uint32_t t)                                                 { return (C(0x26) | E(c,          0x1UL,        2)  | E(s,          0x1UL,    1)  | E(t,      0x1UL,   0))                                                 ; }
+    ENC(COLOR_A           , uint32_t alpha)                                                                     { return (C(0x10) | E(alpha,      0xffUL,       0))                                                                                                        ; }
+    ENC(COLOR_MASK        , uint32_t r, uint32_t g, uint32_t b, uint32_t a)                                     { return (C(0x20) | E(r,          0x1UL,        3)  | E(g,          0x1UL,    2)  | E(b,      0x1UL,   1)  | E(a,     0x1UL, 0))                           ; }
+    ENC(COLOR_RGB         , uint32_t red, uint32_t green, uint32_t blue)                                        { return (C(0x04) | E(red,        0xffUL,       16) | E(green,      0xffUL,   8)  | E(blue,   0xffUL,  0))                                                 ; }
+    ENC(COLOR             , uint32_t c)                                                                         { return (C(0x04) | E(c,          0x00ffffffUL, 0))                                                                                                        ; }
+    ENC(DISPLAY           , )                                                                                   { return (C(0x00))                                                                                                                                         ; }
+    ENC(END               , )                                                                                   { return (C(0x21))                                                                                                                                         ; }
+    ENC(JUMP              , uint32_t dest)                                                                      { return (C(0x1e) | E(dest,       0xFFFFUL,     0))                                                                                                        ; }
+    ENC(LINE_WIDTH        , uint32_t width)                                                                     { return (C(0x0e) | E(width,      0xFFFUL,      0))                                                                                                        ; }
+    ENC(MACRO             , uint32_t m)                                                                         { return (C(0x25) | E(m,          0x1UL,        0))                                                                                                        ; }
+    ENC(NOP               , )                                                                                   { return (C(0x2d))                                                                                                                                         ; }
+    ENC(PALETTE_SOURCE    , uint32_t addr)                                                                      { return (C(0x2a) | E(addr,       0x3FFFFFUL,   0))                                                                                                        ; }
+    ENC(POINT_SIZE        , uint32_t size)                                                                      { return (C(0x0d) | E(size,       0x1FFFUL,     0))                                                                                                        ; }
+    ENC(RESTORE_CONTEXT   , )                                                                                   { return (C(0x23))                                                                                                                                         ; }
+    ENC(RETURN            , )                                                                                   { return (C(0x24))                                                                                                                                         ; }
+    ENC(SAVE_CONTEXT      , )                                                                                   { return (C(0x22))                                                                                                                                         ; }
+    ENC(SCISSOR_SIZE      , uint32_t width, uint32_t height)                                                    { return (C(0x1c) | E(width,      0xFFFUL,      12) | E(height,     0xFFFUL,  0))                                                                          ; }
+    ENC(SCISSOR_XY        , uint32_t x, uint32_t y)                                                             { return (C(0x1b) | E(x,          0x7FFUL,      11) | E(y,          0x7FFUL,  0))                                                                          ; }
+    ENC(STENCIL_FUNC      , uint32_t func, uint32_t ref, uint32_t mask)                                         { return (C(0x0a) | E(func,       0x7UL,        16) | E(ref,        0xffUL,   8) | E(mask,    0xffUL, 0))                                                  ; }
+    ENC(STENCIL_MASK      , uint32_t mask)                                                                      { return (C(0x13) | E(mask,       0xffUL,       0))                                                                                                        ; }
+    ENC(STENCIL_OP        , uint32_t sfail, uint32_t spass)                                                     { return (C(0x0c) | E(sfail,      0x7UL,        3)  | E(spass,      0x7UL,    0))                                                                          ; }
+    ENC(TAG_MASK          , uint32_t mask)                                                                      { return (C(0x14) | E(mask,       0x1UL,        0))                                                                                                        ; }
+    ENC(TAG               , uint32_t s)                                                                         { return (C(0x03) | E(s,          0xffUL,       0))                                                                                                        ; }
+    ENC(VERTEX_FORMAT     , uint32_t frac)                                                                      { return (C(0x27) | E(frac,       0x7UL,        0))                                                                                                        ; }
+    ENC(VERTEX_TRANSLATE_X, uint32_t x)                                                                         { return (C(0x2b) | E(x,          0x1FFFFUL,    0))                                                                                                        ; }
+    ENC(VERTEX_TRANSLATE_Y, uint32_t y)                                                                         { return (C(0x2c) | E(y,          0x1FFFFUL,    0))                                                                                                        ; }
+    ENC(VERTEX2F          , uint32_t x, uint32_t y)                                                             { return (C(0x40) | E(x,          0xffffUL,     15) | E(y,          0xffffUL, 0))                                                                          ; }
+    ENC(VERTEX2II         , uint32_t x, uint32_t y, uint32_t handle, uint32_t cell)                             { return (C(0x80) | E(x,          0x1ffUL,      21) | E(y,          0x1ffUL,  12) | E(handle, 0x1fUL, 7) | E(cell,    0x7fUL, 0))                          ; }
+    #undef C
+    #undef E
 
     // Graphics engine coprocessor commands
     const uint32_t ENC_CMD_APPEND              = 0xFFFFFF1EUL;
@@ -512,6 +515,14 @@ public:
 
         // NOTE: at this point, the display is not active.
         // Don't forget to call Begin().
+    }
+
+public:
+    //-----------------------------------------------------------------------
+    // Get a pointer to the profile
+    const DisplayProfile *Profile()
+    {
+        return &_profile;
     }
 
 public:
@@ -1047,7 +1058,7 @@ protected:
         return _dl_index;
     }
 
-protected:
+public:
     //-----------------------------------------------------------------------
     // Send a graphics engine command with no parameters
     //
@@ -1055,7 +1066,7 @@ protected:
     // next location. Normally it's not necessary to do anything with the
     // return value.
     uint16_t                            // Returns Cmd index after increment
-    Cmd_Dat_0(
+    Cmd(
         uint32_t command)               // Command to queue
     {
         DBG_GEEK("cmd(%08X)\n", command);
@@ -1074,7 +1085,7 @@ protected:
         return _cmd_index;
     }
 
-protected:
+public:
     //-----------------------------------------------------------------------
     // Send a graphics engine command with one parameter
     //
@@ -1082,7 +1093,7 @@ protected:
     // next location. Normally it's not necessary to do anything with the
     // return value.
     uint16_t                            // Returns Cmd index after increment
-    Cmd_Dat_1(
+    Cmd(
         uint32_t command,               // Command to queue
         uint32_t data0)                 // First parameter
     {
@@ -1103,7 +1114,7 @@ protected:
         return _cmd_index;
     }
 
-protected:
+public:
     //-----------------------------------------------------------------------
     // Send a graphics engine command with two parameters
     //
@@ -1111,7 +1122,7 @@ protected:
     // next location. Normally it's not necessary to do anything with the
     // return value.
     uint16_t                            // Returns Cmd index after increment
-    Cmd_Dat_2(
+    Cmd(
         uint32_t command,               // Command to queue
         uint32_t data0,                 // First parameter
         uint32_t data1)                 // Second parameter
@@ -1134,7 +1145,7 @@ protected:
         return _cmd_index;
     }
 
-protected:
+public:
     //-----------------------------------------------------------------------
     // Send a graphics engine command with three parameters
     //
@@ -1142,7 +1153,7 @@ protected:
     // next location. Normally it's not necessary to do anything with the
     // return value.
     uint16_t                            // Returns Cmd index after increment
-    Cmd_Dat_2(
+    Cmd(
         uint32_t command,               // Command to queue
         uint32_t data0,                 // First parameter
         uint32_t data1,                 // Second parameter
@@ -1167,7 +1178,7 @@ protected:
         return _cmd_index;
     }
 
-protected:
+public:
     //-----------------------------------------------------------------------
     // Wait until the graphics engine has caught up.
     //
@@ -1184,7 +1195,7 @@ protected:
         return _cmd_index;
     }
 
-protected:
+public:
     //-----------------------------------------------------------------------
     // Tell the graphic engine to start executing commands
     //
@@ -1217,7 +1228,7 @@ protected:
 
         WaitComplete();
 
-        Cmd_Dat_1(ENC_CMD_GETPTR, 0);
+        Cmd(ENC_CMD_GETPTR, 0);
 
         Execute(true);
 
@@ -1263,8 +1274,57 @@ protected:
         return true;
     }
 
-    // Undefine the command encoding macros. They shouldn't be needed
-    // outside the class.
-    #undef C
-    #undef E
+public:
+    //-----------------------------------------------------------------------
+    // Draw a point at the given location
+    uint16_t                            // Returns updated Cmd index
+    Point(
+        uint16_t point_x,               // X coordinate
+        uint16_t point_y,               // Y coordinate
+        uint16_t ball_size)             // Diameter
+    {
+        // Select the size of the dot to draw
+        Cmd(ENC_POINT_SIZE(ball_size));
+
+        // Indicate to draw a point (dot)
+        Cmd(ENC_BEGIN(BEGIN_POINTS));
+
+        // Set the point center location
+        Cmd(ENC_VERTEX2F(point_x, point_y));
+
+        // End the point
+        Cmd(ENC_END());
+
+        return _cmd_index;
+    }
+
+public:
+    //-----------------------------------------------------------------------
+    // Draw a line between two points
+    uint16_t                            // Returns updated Cmd index
+    Line(
+        uint16_t x0,                    // Start X
+        uint16_t y0,                    // Start Y
+        uint16_t x1,                    // End X
+        uint16_t y1,                    // End Y
+        uint16_t width)                 // Line thickness
+    {
+        //Set the line width
+        Cmd(ENC_LINE_WIDTH(width * 16));
+
+        // Start a line
+        Cmd(ENC_BEGIN(BEGIN_LINES));
+
+        // Set the first point
+        Cmd(ENC_VERTEX2F(x0 * 16, y0 * 16));
+
+        // Set the second point
+        Cmd(ENC_VERTEX2F(x1 * 16, y1 * 16));
+
+        // End the line
+        Cmd(ENC_END());
+
+        return _cmd_index;
+    }
+
 };
