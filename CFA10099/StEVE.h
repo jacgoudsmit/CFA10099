@@ -16,6 +16,10 @@ display size.
 
 // Uncomment this to show detailed data about what the code does
 #define DBG_TRAFFIC(...) //DBG_GEEK(__VA_ARGS__)
+#ifndef STRINGIZE
+#define _STRINGIZE(x) #x
+#define STRINGIZE(x) _STRINGIZE(x)
+#endif
 
 class StEVE
 {
@@ -152,64 +156,252 @@ public:
     const uint32_t REG_VSYNC0                   = 0x0030204CUL;
     const uint32_t REG_VSYNC1                   = 0x00302050UL;
 
-    // Display list command encoding
-    #define E(value, mask, shift) (((value) & (mask)) << (shift))
-    #define C(command) ((command) << 24)
-    #define ENC(name, ...) uint32_t ENC_##name(__VA_ARGS__)
-    ENC(ALPHA_FUNC        , uint32_t func, uint32_t ref)                                                        { return (C(0x09) | E(func,       0x07UL,       8)  | E(ref,        0xffUL,   0))                                                                          ; }
-    ENC(BEGIN             , uint32_t prim)                                                                      { return (C(0x1f) | E(prim,       0x0FUL,       0))                                                                                                        ; }
-    ENC(BITMAP_HANDLE     , uint32_t handle)                                                                    { return (C(0x05) | E(handle,     0x1fUL,       0))                                                                                                        ; }
-    ENC(BITMAP_LAYOUT_H   , uint32_t linestride, uint32_t height)                                               { return (C(0x28) | E(linestride, 0x03UL,       2)  | E(height,     0x3UL,    0))                                                                          ; }
-    ENC(BITMAP_LAYOUT     , uint32_t format, uint32_t linestride, uint32_t height)                              { return (C(0x07) | E(format,     0x1fUL,       19) | E(linestride, 0x3ffUL,  9)  | E(height, 0x1ffUL, 0))                                                 ; }
-    ENC(BITMAP_SIZE_H     , uint32_t width, uint32_t height)                                                    { return (C(0x29) | E(width,      0x3UL,        2)  | E(height,     0x3UL,    0))                                                                          ; }
-    ENC(BITMAP_SIZE       , uint32_t filter, uint32_t wrapx, uint32_t wrapy, uint32_t width, uint32_t height)   { return (C(0x08) | E(filter,     0x1UL,        20) | E(wrapx,      0x1UL,    19) | E(wrapy,  0x1UL,   18) | E(width, 0x1ffUL, 9) | E(height, 0x1ffUL, 0)) ; }
-    ENC(BITMAP_SOURCE     , uint32_t addr)                                                                      { return (C(0x01) | E(addr,       0x3FFFFFUL,   0))                                                                                                        ; }
-    ENC(BITMAP_TRANSFORM_A, uint32_t a)                                                                         { return (C(0x15) | E(a,          0x1FFFFUL,    0))                                                                                                        ; }
-    ENC(BITMAP_TRANSFORM_B, uint32_t b)                                                                         { return (C(0x16) | E(b,          0x1FFFFUL,    0))                                                                                                        ; }
-    ENC(BITMAP_TRANSFORM_C, uint32_t c)                                                                         { return (C(0x17) | E(c,          0xFFFFFFUL,   0))                                                                                                        ; }
-    ENC(BITMAP_TRANSFORM_D, uint32_t d)                                                                         { return (C(0x18) | E(d,          0x1FFFFUL,    0))                                                                                                        ; }
-    ENC(BITMAP_TRANSFORM_E, uint32_t e)                                                                         { return (C(0x19) | E(e,          0x1FFFFUL,    0))                                                                                                        ; }
-    ENC(BITMAP_TRANSFORM_F, uint32_t f)                                                                         { return (C(0x1a) | E(f,          0xFFFFFFUL,   0))                                                                                                        ; }
-    ENC(BLEND_FUNC        , uint32_t src, uint32_t dst)                                                         { return (C(0x0b) | E(src,        0x7UL,        3)  | E(dst,        0x7UL,    0))                                                                          ; }
-    ENC(CALL              , uint32_t dest)                                                                      { return (C(0x1d) | E(dest,       0xFFFFUL,     0))                                                                                                        ; }
-    ENC(CELL              , uint32_t cell)                                                                      { return (C(0x06) | E(cell,       0x7fUL,       0))                                                                                                        ; }
-    ENC(CLEAR_COLOR_A     , uint32_t alpha)                                                                     { return (C(0x0f) | E(alpha,      0xffUL,       0))                                                                                                        ; }
-    ENC(CLEAR_COLOR_RGB   , uint32_t red, uint32_t green, uint32_t blue)                                        { return (C(0x02) | E(red,        0xffUL,       16) | E(green,      0xffUL,   8)  | E(blue,   0xffUL,  0))                                                 ; }
-    ENC(CLEAR_COLOR       , uint32_t c)                                                                         { return (C(0x02) | E(c,          0x00ffffffUL, 0))                                                                                                        ; }
-    ENC(CLEAR_STENCIL     , uint32_t s)                                                                         { return (C(0x11) | E(s,          0xffUL,       0))                                                                                                        ; }
-    ENC(CLEAR_TAG         , uint32_t s)                                                                         { return (C(0x12) | E(s,          0xffUL,       0))                                                                                                        ; }
-    ENC(CLEAR             , uint32_t c, uint32_t s, uint32_t t)                                                 { return (C(0x26) | E(c,          0x1UL,        2)  | E(s,          0x1UL,    1)  | E(t,      0x1UL,   0))                                                 ; }
-    ENC(COLOR_A           , uint32_t alpha)                                                                     { return (C(0x10) | E(alpha,      0xffUL,       0))                                                                                                        ; }
-    ENC(COLOR_MASK        , uint32_t r, uint32_t g, uint32_t b, uint32_t a)                                     { return (C(0x20) | E(r,          0x1UL,        3)  | E(g,          0x1UL,    2)  | E(b,      0x1UL,   1)  | E(a,     0x1UL, 0))                           ; }
-    ENC(COLOR_RGB         , uint32_t red, uint32_t green, uint32_t blue)                                        { return (C(0x04) | E(red,        0xffUL,       16) | E(green,      0xffUL,   8)  | E(blue,   0xffUL,  0))                                                 ; }
-    ENC(COLOR             , uint32_t c)                                                                         { return (C(0x04) | E(c,          0x00ffffffUL, 0))                                                                                                        ; }
-    ENC(DISPLAY           , )                                                                                   { return (C(0x00))                                                                                                                                         ; }
-    ENC(END               , )                                                                                   { return (C(0x21))                                                                                                                                         ; }
-    ENC(JUMP              , uint32_t dest)                                                                      { return (C(0x1e) | E(dest,       0xFFFFUL,     0))                                                                                                        ; }
-    ENC(LINE_WIDTH        , uint32_t width)                                                                     { return (C(0x0e) | E(width,      0xFFFUL,      0))                                                                                                        ; }
-    ENC(MACRO             , uint32_t m)                                                                         { return (C(0x25) | E(m,          0x1UL,        0))                                                                                                        ; }
-    ENC(NOP               , )                                                                                   { return (C(0x2d))                                                                                                                                         ; }
-    ENC(PALETTE_SOURCE    , uint32_t addr)                                                                      { return (C(0x2a) | E(addr,       0x3FFFFFUL,   0))                                                                                                        ; }
-    ENC(POINT_SIZE        , uint32_t size)                                                                      { return (C(0x0d) | E(size,       0x1FFFUL,     0))                                                                                                        ; }
-    ENC(RESTORE_CONTEXT   , )                                                                                   { return (C(0x23))                                                                                                                                         ; }
-    ENC(RETURN            , )                                                                                   { return (C(0x24))                                                                                                                                         ; }
-    ENC(SAVE_CONTEXT      , )                                                                                   { return (C(0x22))                                                                                                                                         ; }
-    ENC(SCISSOR_SIZE      , uint32_t width, uint32_t height)                                                    { return (C(0x1c) | E(width,      0xFFFUL,      12) | E(height,     0xFFFUL,  0))                                                                          ; }
-    ENC(SCISSOR_XY        , uint32_t x, uint32_t y)                                                             { return (C(0x1b) | E(x,          0x7FFUL,      11) | E(y,          0x7FFUL,  0))                                                                          ; }
-    ENC(STENCIL_FUNC      , uint32_t func, uint32_t ref, uint32_t mask)                                         { return (C(0x0a) | E(func,       0x7UL,        16) | E(ref,        0xffUL,   8) | E(mask,    0xffUL, 0))                                                  ; }
-    ENC(STENCIL_MASK      , uint32_t mask)                                                                      { return (C(0x13) | E(mask,       0xffUL,       0))                                                                                                        ; }
-    ENC(STENCIL_OP        , uint32_t sfail, uint32_t spass)                                                     { return (C(0x0c) | E(sfail,      0x7UL,        3)  | E(spass,      0x7UL,    0))                                                                          ; }
-    ENC(TAG_MASK          , uint32_t mask)                                                                      { return (C(0x14) | E(mask,       0x1UL,        0))                                                                                                        ; }
-    ENC(TAG               , uint32_t s)                                                                         { return (C(0x03) | E(s,          0xffUL,       0))                                                                                                        ; }
-    ENC(VERTEX_FORMAT     , uint32_t frac)                                                                      { return (C(0x27) | E(frac,       0x7UL,        0))                                                                                                        ; }
-    ENC(VERTEX_TRANSLATE_X, uint32_t x)                                                                         { return (C(0x2b) | E(x,          0x1FFFFUL,    0))                                                                                                        ; }
-    ENC(VERTEX_TRANSLATE_Y, uint32_t y)                                                                         { return (C(0x2c) | E(y,          0x1FFFFUL,    0))                                                                                                        ; }
-    ENC(VERTEX2F          , uint32_t x, uint32_t y)                                                             { return (C(0x40) | E(x,          0xffffUL,     15) | E(y,          0xffffUL, 0))                                                                          ; }
-    ENC(VERTEX2II         , uint32_t x, uint32_t y, uint32_t handle, uint32_t cell)                             { return (C(0x80) | E(x,          0x1ffUL,      21) | E(y,          0x1ffUL,  12) | E(handle, 0x1fUL, 7) | E(cell,    0x7fUL, 0))                          ; }
-    #undef C
-    #undef E
+    // Display list commands (ProgGuide ch.4)
+    typedef enum
+    {
+        CMD_DISPLAY                 = 0x00000000,
+        CMD_BITMAP_SOURCE           = 0x01000000,
+        CMD_CLEAR_COLOR_RGB         = 0x02000000,
+        CMD_TAG                     = 0x03000000,
+        CMD_COLOR_RGB               = 0x04000000,
+        CMD_BITMAP_HANDLE           = 0x05000000,
+        CMD_CELL                    = 0x06000000,
+        CMD_BITMAP_LAYOUT           = 0x07000000,
+        CMD_BITMAP_SIZE             = 0x08000000,
+        CMD_ALPHA_FUNC              = 0x09000000,
+        CMD_STENCIL_FUNC            = 0x0A000000,
+        CMD_BLEND_FUNC              = 0x0B000000,
+        CMD_STENCIL_OP              = 0x0C000000,
+        CMD_POINT_SIZE              = 0x0D000000,
+        CMD_LINE_WIDTH              = 0x0E000000,
+        CMD_CLEAR_COLOR_A           = 0x0F000000,
+        CMD_COLOR_A                 = 0x10000000,
+        CMD_CLEAR_STENCIL           = 0x11000000,
+        CMD_CLEAR_TAG               = 0x12000000,
+        CMD_STENCIL_MASK            = 0x13000000,
+        CMD_TAG_MASK                = 0x14000000,
+        CMD_BITMAP_TRANSFORM_A      = 0x15000000,
+        CMD_BITMAP_TRANSFORM_B      = 0x16000000,
+        CMD_BITMAP_TRANSFORM_C      = 0x17000000,
+        CMD_BITMAP_TRANSFORM_D      = 0x18000000,
+        CMD_BITMAP_TRANSFORM_E      = 0x19000000,
+        CMD_BITMAP_TRANSFORM_F      = 0x1A000000,
+        CMD_SCISSOR_XY              = 0x1B000000,
+        CMD_SCISSOR_SIZE            = 0x1C000000,
+        CMD_CALL                    = 0x1D000000,
+        CMD_JUMP                    = 0x1E000000,
+        CMD_BEGIN                   = 0x1F000000,
+        CMD_COLOR_MASK              = 0x20000000,
+        CMD_END                     = 0x21000000,
+        CMD_SAVE_CONTEXT            = 0x22000000,
+        CMD_RESTORE_CONTEXT         = 0x23000000,
+        CMD_RETURN                  = 0x24000000,
+        CMD_MACRO                   = 0x25000000,
+        CMD_CLEAR                   = 0x26000000,
+        CMD_VERTEX_FORMAT           = 0x27000000,
+        CMD_BITMAP_LAYOUT_H         = 0x28000000,
+        CMD_BITMAP_SIZE_H           = 0x29000000,
+        CMD_PALETTE_SOURCE          = 0x2A000000,
+        CMD_VERTEX_TRANSLATE_X      = 0x2B000000,
+        CMD_VERTEX_TRANSLATE_Y      = 0x2C000000,
+        CMD_NOP                     = 0x2D000000,
+        CMD_VERTEX2F                = 0x40000000, // Encoded in ProgGuide as 1<<22
+        CMD_VERTEX2II               = 0x80000000, // Encoded in ProgGuide as 2<<22
+    }   CMD;
 
-    // Graphics engine coprocessor commands
+    // Alpha test function for ALPHA_FUNC (ProgGuide 4.4 p.92) and
+    // and STENCIL_FUNC (ProgGuide 4.42 p.139)
+    // See ProgGuide Table 5 p.92.
+    typedef enum
+    {
+        FUNC_NEVER                  = 0,
+        FUNC_LESS                   = 1,
+        FUNC_LEQUAL                 = 2,
+        FUNC_GREATER                = 3,
+        FUNC_GEQUAL                 = 4,
+        FUNC_EQUAL                  = 5,
+        FUNC_NOTEQUAL               = 6,
+        FUNC_ALWAYS                 = 7,
+    }   FUNC;
+
+    // Graphics primitive operations for BEGIN (ProgGuide 4.5 Table 6 p.94)
+    typedef enum
+    {
+        BEGIN_BITMAPS               = 1,
+        BEGIN_POINTS                = 2,
+        BEGIN_LINES                 = 3,
+        BEGIN_LINE_STRIP            = 4,
+        BEGIN_EDGE_STRIP_R          = 5,
+        BEGIN_EDGE_STRIP_L          = 6,
+        BEGIN_EDGE_STRIP_A          = 7,
+        BEGIN_EDGE_STRIP_B          = 8,
+        BEGIN_RECTS                 = 9,
+    }   BEGIN;
+
+    // Bitmap format for BITMAP_LAYOUT (ProgGuide 4.7 Table 7 p.97)
+    typedef enum
+    {
+        FORMAT_ARGB1555             = 0,
+        FORMAT_L1                   = 1,
+        FORMAT_L4                   = 2,
+        FORMAT_L8                   = 3,
+        FORMAT_RGB332               = 4,
+        FORMAT_ARGB2                = 5,
+        FORMAT_ARGB4                = 6,
+        FORMAT_RGB565               = 7,
+        FORMAT_PALETTED             = 8,
+        FORMAT_TEXT8X8              = 9,
+        FORMAT_TEXTVGA              = 10,
+        FORMAT_BARGRAPH             = 11,
+        FORMAT_PALETTED565          = 14,
+        FORMAT_PALETTED4444         = 15,
+        FORMAT_PALETTED8            = 16,
+        FORMAT_L2                   = 17,
+    }   FORMAT;
+
+    // Bitmap filtering mode for BITMAP_SIZE (ProgGuide 4.9 p.103)
+    typedef enum
+    {
+        FILTER_NEAREST              = 0,
+        FILTER_BILINEAR             = 1,
+    }   FILTER;
+
+    // Bitmap wrap mode for BITMAP_SIZE (ProgGuide 4.9 p.103)
+    typedef enum
+    {
+        WRAP_BORDER                 = 0,
+        WRAP_REPEAT                 = 1,
+    }   WRAP;
+
+    // Blending factor for BLEND_FUNC (ProgGuide 4.18 Table 8 p.114)
+    typedef enum
+    {
+        BLEND_ZERO                  = 0,
+        BLEND_ONE                   = 1,
+        BLEND_SRC_ALPHA             = 2,
+        BLEND_DST_ALPHA             = 3,
+        BLEND_ONE_MINUS_SRC_ALPHA   = 4,
+        BLEND_ONE_MINUS_DST_ALPHA   = 5,
+    }   BLEND;
+
+    // Stencil operations for STENCIL_OP (ProgGuide 4.44 Figure 10 p.141)
+    typedef enum {
+        STENCIL_ZERO                = 0,
+        STENCIL_KEEP                = 1,
+        STENCIL_REPLACE             = 2,
+        STENCIL_INCR                = 3,
+        STENCIL_DECR                = 4,
+        STENCIL_INVERT              = 5,
+    }   STENCIL;
+
+    // Display list command encoding
+    //
+    // Following macro is used for easy encoding of a field in a 
+    // uint32_t. The fields are shown in the Programmer's Guide with the
+    // leftmost and rightmost bit numbers, so this macro should make it easy
+    // to write and verify the encoding of the fields.
+    //
+    // Example: E(value, 10, 8) shifts the value 8 bits to the left after
+    // masking out all but the lowest 3 bits (bits 10 to 8 inclusive is a
+    // total of 3 bits).
+    //
+    // Say D = (leftbit) - (rightbit)   The Difference between the first and
+    //                                  last bit locations of the field.
+    // Say W = (D) + 1:                 The Width of the field in bits.
+    // Say M = (1 << (W)) - 1:          A bitmask with W right-justified
+    //                                  bits set to '1'.
+    // Say V = (value) & (M):           The Value with all insignificant bits
+    //                                  set to '0'.
+    // Say N = (V) << (rightbit)        The field shifted into place; the eNd
+    //                                  result of the macro
+    //
+    // Substituting this in reverse, the formula becomes:
+    // N = ((V) << rightbit)
+    // N = (((value) & (M)) << rightbit)
+    // N = (((value) & ((1 << (W)) - 1)) << rightbit)
+    // N = (((value) & ((1 << ((D) + 1)) - 1)) << rightbit)
+    // N = (((value) & ((1 << (((leftbit) - (rightbit)) + 1)) - 1)) << rightbit)
+    //
+    // Because the macro is used with enum values in some cases, we replace
+    // "value" with (uint32_t)value.
+    //
+    // We also apply extra parentheses to avoid problems with expression
+    // evaluation order.
+    //
+    // The result looks pretty daunting but the optimizer will reduce it
+    // to code that's basically equivalent to (value & constant) << constant.
+    #define N(value, leftbit, rightbit) ((((uint32_t)value) & ((1 << (((leftbit) - (rightbit)) + 1)) - 1)) << rightbit)
+    // Calculate command
+    #define BODY(cmd, value) return ((uint32_t)CMD_##cmd) | value;
+    // Print and calculate command (Very chatty!)
+    #define DBG_BODY(cmd, value) uint32_t result = ((uint32_t)CMD_##cmd) | value; DBG_STAT("Command %18s=%08X=%s\n", STRINGIZE(cmd), result, STRINGIZE(value)); return result;
+
+    // Functions to encode display list commands
+    //
+    // These have names in upper case to be consistent with the macros for
+    // co-processor commands, and with code in other FT81X libraries. This
+    // makes the names somewhat inconsistent, but it makes code easier to
+    // port.
+    //
+    // Note: The names of the non-enum parameters include the actual number
+    // of bits that are used, as a reminder. Keep in mind that some
+    // parameters are encoded as unsigned or signed fixed-point value
+    // and that negative fixed-point does not use 2's complement.
+    uint32_t ENC_ALPHA_FUNC        (FUNC func, uint8_t ref8)                                                    { BODY(ALPHA_FUNC        , N(func,     10,  8) | N(ref8,      7,  0)                                                            ) } // ProgGuide 4.4 p.92
+    uint32_t ENC_BEGIN             (BEGIN prim)                                                                 { BODY(BEGIN             , N(prim,      3,  0)                                                                                  ) } // ProgGuide 4.5 p.94
+    uint32_t ENC_BITMAP_HANDLE     (uint8_t handle5)                                                            { BODY(BITMAP_HANDLE     , N(handle5,   4,  0)                                                                                  ) } // ProgGuide 4.6 p.96
+    uint32_t ENC_BITMAP_LAYOUT     (FORMAT format, uint32_t stride10, uint32_t height9)                         { BODY(BITMAP_LAYOUT     , N(format,   23, 19) | N(stride10, 18,  9) | N(height9,  8,  0)                                       ) } // ProgGuide 4.7 p.97
+    uint32_t ENC_BITMAP_LAYOUT_H   (uint32_t strideh2, uint32_t heighth2)                                       { BODY(BITMAP_LAYOUT_H   , N(strideh2,  3,  2) | N(heighth2,  1,  0)                                                            ) } // ProgGuide 4.8 p.103
+    uint32_t ENC_BITMAP_SIZE       (FILTER filter, WRAP wrapx, WRAP wrapy, uint16_t width9, uint16_t height9)   { BODY(BITMAP_SIZE       , N(filter,   20, 20) | N(wrapx,    19, 19) | N(wrapy,   18, 18) | N(width9, 17,  9) | N(height9, 8, 0)) } // ProgGuide 4.9 p.103
+    uint32_t ENC_BITMAP_SIZE_H     (uint16_t width2, uint16_t height2)                                          { BODY(BITMAP_SIZE_H     , N(width2,    3,  2) | N(height2,   1,  0)                                                            ) } // ProgGuide 4.10 p.105
+    uint32_t ENC_BITMAP_SOURCE     (uint32_t addr22)                                                            { BODY(BITMAP_SOURCE     , N(addr22,   21,  0)                                                                                  ) } // ProgGuide 4.11 p.106
+    uint32_t ENC_BITMAP_TRANSFORM_A(uint32_t a17)                                                               { BODY(BITMAP_TRANSFORM_A, N(a17,      16,  0)                                                                                  ) } // ProgGuide 4.12 p.108
+    uint32_t ENC_BITMAP_TRANSFORM_B(uint32_t b17)                                                               { BODY(BITMAP_TRANSFORM_B, N(b17,      16,  0)                                                                                  ) } // ProgGuide 4.13 p.109
+    uint32_t ENC_BITMAP_TRANSFORM_C(uint32_t c24)                                                               { BODY(BITMAP_TRANSFORM_C, N(c24,      23,  0)                                                                                  ) } // ProgGuide 4.14 p.110
+    uint32_t ENC_BITMAP_TRANSFORM_D(uint32_t d17)                                                               { BODY(BITMAP_TRANSFORM_D, N(d17,      16,  0)                                                                                  ) } // ProgGuide 4.15 p.111
+    uint32_t ENC_BITMAP_TRANSFORM_E(uint32_t e17)                                                               { BODY(BITMAP_TRANSFORM_E, N(e17,      16,  0)                                                                                  ) } // ProgGuide 4.16 p.112
+    uint32_t ENC_BITMAP_TRANSFORM_F(uint32_t f24)                                                               { BODY(BITMAP_TRANSFORM_F, N(f24,      23,  0)                                                                                  ) } // ProgGuide 4.17 p.113
+    uint32_t ENC_BLEND_FUNC        (BLEND src, BLEND dst)                                                       { BODY(BLEND_FUNC        , N(src,       5,  3) | N(dst,       2,  0)                                                            ) } // ProgGuide 4.18 p.114
+    uint32_t ENC_CALL              (uint32_t dest22)                                                            { BODY(CALL              , N(dest22,   15,  0)                                                                                  ) } // ProgGuide 4.19 p.116
+    uint32_t ENC_CELL              (uint8_t cell7)                                                              { BODY(CELL              , N(cell7,     6,  0)                                                                                  ) } // ProgGuide 4.20 p.117
+    uint32_t ENC_CLEAR             (uint8_t color1, uint8_t stencil1, uint8_t tag1)                             { BODY(CLEAR             , N(color1,    2,  2) | N(stencil1,  1,  1) | N(tag1,     0,  0)                                       ) } // ProgGuide 4.21 p.118
+    uint32_t ENC_CLEAR_COLOR_A     (uint8_t alpha8)                                                             { BODY(CLEAR_COLOR_A     , N(alpha8,    7,  0)                                                                                  ) } // ProgGuide 4.22 p.120
+    uint32_t ENC_CLEAR_COLOR_RGB   (uint8_t red8, uint8_t green8, uint8_t blue8)                                { BODY(CLEAR_COLOR_RGB   , N(red8,     23, 16) | N(green8,   15,  8) | N(blue8,    7,  0)                                       ) } // ProgGuide 4.23 p.121
+    uint32_t ENC_CLEAR_COLOR       (uint32_t rgb24)                                                             { BODY(CLEAR_COLOR_RGB   , N(rgb24,    23,  0)                                                                                  ) } // ProgGuide 4.23 p.121
+    uint32_t ENC_CLEAR_STENCIL     (uint8_t stencil8)                                                           { BODY(CLEAR_STENCIL     , N(stencil8,  7,  0)                                                                                  ) } // ProgGuide 4.24 p.122
+    uint32_t ENC_CLEAR_TAG         (uint8_t tag8)                                                               { BODY(CLEAR_TAG         , N(tag8,      7,  0)                                                                                  ) } // ProgGuide 4.25 p.123
+    uint32_t ENC_COLOR_A           (uint8_t alpha8)                                                             { BODY(COLOR_A           , N(alpha8,    7,  0)                                                                                  ) } // ProgGuide 4.26 p.124
+    uint32_t ENC_COLOR_MASK        (uint8_t red1, uint8_t green1, uint8_t blue1, uint8_t alpha1)                { BODY(COLOR_MASK        , N(red1,      3,  3) | N(green1,    2,  2) | N(blue1,    1,  1) | N(alpha1,  0,  0)                   ) } // ProgGuide 4.27 p.125
+    uint32_t ENC_COLOR_RGB         (uint8_t red8, uint8_t green8, uint8_t blue8)                                { BODY(COLOR_RGB         , N(red8,     23, 16) | N(green8,   15,  8) | N(blue8,    7,  0)                                       ) } // ProgGuide 4.28 p.126
+    uint32_t ENC_COLOR             (uint32_t rgb24)                                                             { BODY(COLOR_RGB         , N(rgb24,    23,  0)                                                                                  ) } // ProgGuide 4.28 p.126
+    uint32_t ENC_DISPLAY           ()                                                                           { BODY(DISPLAY           , 0                                                                                                    ) } // ProgGuide 4.29 p.127
+    uint32_t ENC_END               ()                                                                           { BODY(END               , 0                                                                                                    ) } // ProgGuide 4.30 p.128
+    uint32_t ENC_JUMP              (uint16_t dest16)                                                            { BODY(JUMP              , N(dest16,   15,  0)                                                                                  ) } // ProgGuide 4.31 p.129
+    uint32_t ENC_LINE_WIDTH        (uint16_t width12)                                                           { BODY(LINE_WIDTH        , N(width12,  11,  0)                                                                                  ) } // ProgGuide 4.32 p.130
+    uint32_t ENC_MACRO             (uint8_t index1)                                                             { BODY(MACRO             , N(index1,    0,  0)                                                                                  ) } // ProgGuide 4.33 p.131
+    uint32_t ENC_NOP               ()                                                                           { BODY(NOP               , 0                                                                                                    ) } // ProgGuide 4.34 p.131
+    uint32_t ENC_PALETTE_SOURCE    (uint32_t addr22)                                                            { BODY(PALETTE_SOURCE    , N(addr22,   21,  0)                                                                                  ) } // ProgGuide 4.35 p.132
+    uint32_t ENC_POINT_SIZE        (uint16_t size13)                                                            { BODY(POINT_SIZE        , N(size13,   12,  0)                                                                                  ) } // ProgGuide 4.36 p.133
+    uint32_t ENC_RESTORE_CONTEXT   ()                                                                           { BODY(RESTORE_CONTEXT   , 0                                                                                                    ) } // ProgGuide 4.37 p.134
+    uint32_t ENC_RETURN            ()                                                                           { BODY(RETURN            , 0                                                                                                    ) } // ProgGuide 4.38 p.135
+    uint32_t ENC_SAVE_CONTEXT      ()                                                                           { BODY(SAVE_CONTEXT      , 0                                                                                                    ) } // ProgGuide 4.39 p.136
+    uint32_t ENC_SCISSOR_SIZE      (uint16_t width12, uint16_t height12)                                        { BODY(SCISSOR_SIZE      , N(width12,  23, 12) | N(height12, 11,  0)                                                            ) } // ProgGuide 4.40 p.137
+    uint32_t ENC_SCISSOR_XY        (uint16_t x11, uint16_t y11)                                                 { BODY(SCISSOR_XY        , N(x11,      21, 11) | N(y11,      10,  0)                                                            ) } // ProgGuide 4.41 p.138
+    uint32_t ENC_STENCIL_FUNC      (FUNC func, uint8_t ref8, uint8_t mask8)                                     { BODY(STENCIL_FUNC      , N(func,     19, 16) | N(ref8,     15,  8) | N(mask8,    7,  0)                                       ) } // ProgGuide 4.42 p.139
+    uint32_t ENC_STENCIL_MASK      (uint8_t mask8)                                                              { BODY(STENCIL_MASK      , N(mask8,     7,  0)                                                                                  ) } // ProgGuide 4.43 p.140
+    uint32_t ENC_STENCIL_OP        (STENCIL sfail, STENCIL spass)                                               { BODY(STENCIL_OP        , N(sfail,     5,  3) | N(spass,     2,  0)                                                            ) } // ProgGuide 4.44 p.141
+    uint32_t ENC_TAG               (uint8_t tag8)                                                               { BODY(TAG               , N(tag8,      7,  0)                                                                                  ) } // ProgGuide 4.45 p.143
+    uint32_t ENC_TAG_MASK          (uint8_t mask1)                                                              { BODY(TAG_MASK          , N(mask1,     0,  0)                                                                                  ) } // ProgGuide 4.46 p.144
+    uint32_t ENC_VERTEX2F          (uint16_t x15, uint16_t y15)                                                 { BODY(VERTEX2F          , N(x15,      29, 15) | N(y15,      14,  0)                                                            ) } // ProgGuide 4.47 p.145
+    uint32_t ENC_VERTEX2II         (uint16_t x9, uint16_t y9, uint8_t handle5, uint8_t cell6)                   { BODY(VERTEX2II         , N(x9,       29, 21) | N(y9,       20, 12) | N(handle5, 11,  7) | N(cell6,  6,  0)                    ) } // ProgGuide 4.48 p.146
+    uint32_t ENC_VERTEX_FORMAT     (uint8_t frac3)                                                              { BODY(VERTEX_FORMAT     , N(frac3,     2,  0)                                                                                  ) } // ProgGuide 4.49 p.147
+    uint32_t ENC_VERTEX_TRANSLATE_X(uint32_t x17)                                                               { BODY(VERTEX_TRANSLATE_X, N(x17,      16,  0)                                                                                  ) } // ProgGuide 4.50 p.148
+    uint32_t ENC_VERTEX_TRANSLATE_Y(uint32_t y17)                                                               { BODY(VERTEX_TRANSLATE_Y, N(y17,      16,  0)                                                                                  ) } // ProgGuide 4.51 p.149
+    #undef N
+    #undef DBG_BODY
+    #undef BODY
+
+    // Graphics co-processor commands
     const uint32_t ENC_CMD_APPEND              = 0xFFFFFF1EUL;
     const uint32_t ENC_CMD_BGCOLOR             = 0xFFFFFF09UL;
     const uint32_t ENC_CMD_BITMAP_TRANSFORM    = 0xFFFFFF21UL;
@@ -280,42 +472,9 @@ public:
     const uint32_t ENC_CMD_VIDEOSTART          = 0xFFFFFF40UL;
 
     // Constants for parameters to commands
-    const uint32_t BEGIN_BITMAPS               = 0x00000001UL;
-    const uint32_t BEGIN_EDGE_STRIP_A          = 0x00000007UL;
-    const uint32_t BEGIN_EDGE_STRIP_B          = 0x00000008UL;
-    const uint32_t BEGIN_EDGE_STRIP_L          = 0x00000006UL;
-    const uint32_t BEGIN_EDGE_STRIP_R          = 0x00000005UL;
-    const uint32_t BEGIN_LINE_STRIP            = 0x00000004UL;
-    const uint32_t BEGIN_LINES                 = 0x00000003UL;
-    const uint32_t BEGIN_POINTS                = 0x00000002UL;
-    const uint32_t BEGIN_RECTS                 = 0x00000009UL;
-    const uint32_t BLEND_DST_ALPHA             = 0x00000003UL;
-    const uint32_t BLEND_ONE                   = 0x00000001UL;
-    const uint32_t BLEND_ONE_MINUS_DST_ALPHA   = 0x00000005UL;
-    const uint32_t BLEND_ONE_MINUS_SRC_ALPHA   = 0x00000004UL;
-    const uint32_t BLEND_SRC_ALPHA             = 0x00000002UL;
-    const uint32_t BLEND_ZERO                  = 0x00000000UL;
     const uint32_t DLSWAP_DONE                 = 0x00000000UL;
     const uint32_t DLSWAP_FRAME                = 0x00000002UL;
     const uint32_t DLSWAP_LINE                 = 0x00000001UL;
-    const uint32_t FILTER_BILINEAR             = 0x00000001UL;
-    const uint32_t FILTER_NEAREST              = 0x00000000UL;
-    const uint32_t FORMAT_ARGB1555             = 0x00000000UL;
-    const uint32_t FORMAT_ARGB2                = 0x00000005UL;
-    const uint32_t FORMAT_ARGB4                = 0x00000006UL;
-    const uint32_t FORMAT_BARGRAPH             = 0x0000000BUL;
-    const uint32_t FORMAT_L1                   = 0x00000001UL;
-    const uint32_t FORMAT_L2                   = 0x00000011UL;
-    const uint32_t FORMAT_L4                   = 0x00000002UL;
-    const uint32_t FORMAT_L8                   = 0x00000003UL;
-    const uint32_t FORMAT_PALETTED             = 0x00000008UL;
-    const uint32_t FORMAT_PALETTED4444         = 0x0000000FUL;
-    const uint32_t FORMAT_PALETTED565          = 0x0000000EUL;
-    const uint32_t FORMAT_PALETTED8            = 0x00000010UL;
-    const uint32_t FORMAT_RGB332               = 0x00000004UL;
-    const uint32_t FORMAT_RGB565               = 0x00000007UL;
-    const uint32_t FORMAT_TEXT8X8              = 0x00000009UL;
-    const uint32_t FORMAT_TEXTVGA              = 0x0000000AUL;
     const uint32_t INT_CMDEMPTY                = 0x00000020UL;
     const uint32_t INT_CMDFLAG                 = 0x00000040UL;
     const uint32_t INT_CONVCOMPLETE            = 0x00000080UL;
@@ -346,28 +505,12 @@ public:
     const uint32_t OPT_RIGHTX                  = 0x00000800UL;
     const uint32_t OPT_SIGNED                  = 0x00000100UL;
     const uint32_t OPT_SOUND                   = 0x00000020UL;
-    const uint32_t STENCIL_DECR                = 0x00000004UL;
-    const uint32_t STENCIL_INCR                = 0x00000003UL;
-    const uint32_t STENCIL_INVERT              = 0x00000005UL;
-    const uint32_t STENCIL_KEEP                = 0x00000001UL;
-    const uint32_t STENCIL_REPLACE             = 0x00000002UL;
-    const uint32_t STENCIL_ZERO                = 0x00000000UL;
-    const uint32_t TEST_ALWAYS                 = 0x00000007UL;
-    const uint32_t TEST_EQUAL                  = 0x00000005UL;
-    const uint32_t TEST_GEQUAL                 = 0x00000004UL;
-    const uint32_t TEST_GREATER                = 0x00000003UL;
-    const uint32_t TEST_LEQUAL                 = 0x00000002UL;
-    const uint32_t TEST_LESS                   = 0x00000001UL;
-    const uint32_t TEST_NEVER                  = 0x00000000UL;
-    const uint32_t TEST_NOTEQUAL               = 0x00000006UL;
     const uint32_t TOUCHMODE_CONTINUOUS        = 0x00000003UL;
     const uint32_t TOUCHMODE_FRAME             = 0x00000002UL;
     const uint32_t TOUCHMODE_OFF               = 0x00000000UL;
     const uint32_t TOUCHMODE_ONESHOT           = 0x00000001UL;
     const uint32_t ULAW_SAMPLES                = 0x00000001UL;
     const uint32_t VOL_ZERO                    = 0x00000000UL;
-    const uint32_t WRAP_BORDER                 = 0x00000000UL;
-    const uint32_t WRAP_REPEAT                 = 0x00000001UL;
     const uint32_t ADC_DIFFERENTIAL            = 0x00000001UL;
     const uint32_t ADC_SINGLE_ENDED            = 0x00000000UL;
     const uint32_t ADPCM_SAMPLES               = 0x00000002UL;
@@ -376,19 +519,16 @@ public:
     // "Host commands", see paragraph 4.1.5 p.16 of FT81X datasheet
     enum HOSTCMD
     {
-        // Codes that are commented out weren't tested but should work
-        // according to the data sheet.
-
         ACTIVE          = 0x00,
         STANDBY         = 0x41,
         PWRDOWN         = 0x50, // or 0x43
-        //PD_ROMS         = 0x49,
+        PD_ROMS         = 0x49,
         CLKEXT          = 0x44,
         CLKINT          = 0x48,
         CLKSEL          = 0x61, // or 0x62
-        //RST_PULSE       = 0x68,
-        //PINDRIVE        = 0x70,
-        //PIN_PD_STATE    = 0x71,
+        RST_PULSE       = 0x68,
+        PINDRIVE        = 0x70,
+        PIN_PD_STATE    = 0x71,
     };
 
     // Host memory operations
@@ -724,7 +864,7 @@ public:
         // may not be available this early.
         // This just shows a black screen
         _dl_index = 0;
-        dl(ENC_CLEAR_COLOR_RGB(0, 0, 0));
+        dl(ENC_CLEAR_COLOR(0));
         dl(ENC_CLEAR(1,1,1));// color, stencil, tags
         dl(ENC_DISPLAY());
 

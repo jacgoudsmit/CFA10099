@@ -308,7 +308,7 @@ public:
         }
 
         // Straight math does not make it skinny enough. This seems like it should
-        // underlow often, but in real life never goes below 1. Need to dissect.
+        // underflow often, but in real life never goes below 1. Need to dissect.
         rubberband_width = 10 - ((9 + 1) * (x_distance + y_distance)) / ((pro->_hsize / 2) + (pro->_vsize / 2));
 
         // Check for underflow just in case.
@@ -501,7 +501,7 @@ void loop()
     // Start the command list
     steve.Cmd(steve.ENC_CMD_DLSTART);
 
-    // Set the default clear color to black
+    // Set the default clear color
     steve.Cmd(steve.ENC_CLEAR_COLOR_RGB(255,255,255));
 
     // Clear the screen - this and the previous prevent artifacts between lists
