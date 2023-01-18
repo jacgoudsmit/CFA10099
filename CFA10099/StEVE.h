@@ -26,136 +26,221 @@ class StEVE
 {
 public:
     //-----------------------------------------------------------------------
+    // Class to keep track of an index into the RAM area of the EVE chip
+    //
+    // The class works mostly like a uint16_t but whenever the value is
+    // changed, a modulo is applied with the maximum value.
+    //
+    // Note: The optimizer should be smart enough to substitute a bitwise
+    // AND operation instead of performing the modulo by dividing, for
+    // maximum values that are a power of 2.
+    template<uint16_t max_value> class Index
+    {
+    private:
+        uint16_t    _index;             // Stored value, always <max_value
+
+    private:
+        //-------------------------------------------------------------------
+        // Wrap the value around the maximum by performing a modulo operation
+        uint16_t Wrap()
+        {
+            return _index %= max_value;
+        }
+
+    public:
+        //-------------------------------------------------------------------
+        // Constructor
+        Index(uint16_t initial_value = 0) : _index(initial_value)
+        {
+            Wrap();
+        }
+
+    public:
+        //-------------------------------------------------------------------
+        // Operator to add a signed integer in place
+        //
+        // The result is wrapped around the maximum value
+        Index<max_value> &operator+=(int16_t value)
+        {
+            _index += value;
+            Wrap();
+            return *this;
+        }
+
+    public:
+        //-------------------------------------------------------------------
+        // Operator to subtract a signed integer in place
+        //
+        // The result is wrapped around the maximum value
+        Index<max_value> &operator-=(int16_t value)
+        {
+            _index -= value;
+            Wrap();
+            return *this;
+        }
+
+    public:
+        //-------------------------------------------------------------------
+        // Operator to construct an index from the result of an addition
+        Index<max_value> operator+(int16_t value) const
+        {
+            Index<max_value> result(_index);
+            return result += value;
+        }
+
+    public:
+        //-------------------------------------------------------------------
+        // Operator to construct an index from the result of an subtraction
+        Index<max_value> operator-(int16_t value) const
+        {
+            Index<max_value> result(_index);
+            return result -= value;
+        }
+
+    public:
+        //-------------------------------------------------------------------
+        // Read the value
+        uint16_t index() const
+        {
+            return _index;
+        }
+    };
+
+public:
+    //-----------------------------------------------------------------------
     // Memory locations
     const uint32_t CHIP_ID_ADDRESS              = 0x000C0000UL; // Datasheet 5.2 p.45
 
     // Memory map, see datasheet section 5 p.40
-    const uint32_t RAM_CMD                      = 0x00308000UL;
-    const uint32_t RAM_CMD_SIZE                 = 4*1024L;
-    const uint32_t RAM_DL                       = 0x00300000UL;
-    const uint32_t RAM_DL_SIZE                  = 8*1024L;
-    const uint32_t RAM_G                        = 0x00000000UL;
-    const uint32_t RAM_G_SIZE                   = 1024*1024L;
-    const uint32_t RAM_REG                      = 0x00302000UL;
-    const uint32_t RAM_ROMSUB                   = 0x0030A000UL;
-    const uint32_t ROM_FONT                     = 0x001E0000UL;
-    const uint32_t ROMFONT_TABLEADDRESS         = 0x002FFFFCUL;
+    const static uint32_t RAM_CMD               = 0x00308000UL;
+    const static uint32_t RAM_CMD_SIZE          = 4*1024L;
+    const static uint32_t RAM_DL                = 0x00300000UL;
+    const static uint32_t RAM_DL_SIZE           = 8*1024L;
+    const static uint32_t RAM_G                 = 0x00000000UL;
+    const static uint32_t RAM_G_SIZE            = 1024*1024L;
+    const static uint32_t RAM_REG               = 0x00302000UL;
+    const static uint32_t RAM_ROMSUB            = 0x0030A000UL;
+    const static uint32_t ROM_FONT              = 0x001E0000UL;
+    const static uint32_t ROMFONT_TABLEADDRESS  = 0x002FFFFCUL;
+
+    typedef Index<RAM_CMD_SIZE> CmdIndex;
+    typedef Index<RAM_DL_SIZE> DLIndex;
 
     // Registers, see datasheet section 5.1 p.40
-    const uint32_t REG_ANA_COMP                 = 0x00302184UL;
-    const uint32_t REG_ANALOG                   = 0x0030216CUL;
-    const uint32_t REG_BIST_EN                  = 0x00302174UL;
-    const uint32_t REG_BUSYBITS                 = 0x003020E8UL;
-    const uint32_t REG_CLOCK                    = 0x00302008UL;
-    const uint32_t REG_CMD_DL                   = 0x00302100UL;
-    const uint32_t REG_CMD_READ                 = 0x003020F8UL;
-    const uint32_t REG_CMD_WRITE                = 0x003020FCUL;
-    const uint32_t REG_CMDB_SPACE               = 0x00302574UL;
-    const uint32_t REG_CMDB_WRITE               = 0x00302578UL;
-    const uint32_t REG_CPURESET                 = 0x00302020UL;
-    const uint32_t REG_CRC                      = 0x00302178UL;
-    const uint32_t REG_CSPREAD                  = 0x00302068UL;
-    const uint32_t REG_CTOUCH_EXTENDED          = 0x00302108UL;
-    const uint32_t REG_CTOUCH_TOUCH0_XY         = 0x00302124UL;
-    const uint32_t REG_CTOUCH_TOUCH1_XY         = 0x0030211CUL;
-    const uint32_t REG_CTOUCH_TOUCH2_XY         = 0x0030218CUL;
-    const uint32_t REG_CTOUCH_TOUCH3_XY         = 0x00302190UL;
-    const uint32_t REG_CTOUCH_TOUCH4_X          = 0x0030216CUL;
-    const uint32_t REG_CTOUCH_TOUCH4_Y          = 0x00302120UL;
-    const uint32_t REG_CYA_TOUCH                = 0x00302168UL;
-    const uint32_t REG_DATESTAMP                = 0x00302564UL;
-    const uint32_t REG_DITHER                   = 0x00302060UL;
-    const uint32_t REG_DLSWAP                   = 0x00302054UL;
-    const uint32_t REG_FRAMES                   = 0x00302004UL;
-    const uint32_t REG_FREQUENCY                = 0x0030200CUL;
-    const uint32_t REG_GPIO                     = 0x00302094UL;
-    const uint32_t REG_GPIO_DIR                 = 0x00302090UL;
-    const uint32_t REG_GPIOX                    = 0x0030209CUL;
-    const uint32_t REG_GPIOX_DIR                = 0x00302098UL;
-    const uint32_t REG_HCYCLE                   = 0x0030202CUL;
-    const uint32_t REG_HOFFSET                  = 0x00302030UL;
-    const uint32_t REG_HSIZE                    = 0x00302034UL;
-    const uint32_t REG_HSYNC0                   = 0x00302038UL;
-    const uint32_t REG_HSYNC1                   = 0x0030203CUL;
-    const uint32_t REG_ID                       = 0x00302000UL;
-    const uint32_t REG_INT_EN                   = 0x003020ACUL;
-    const uint32_t REG_INT_FLAGS                = 0x003020A8UL;
-    const uint32_t REG_INT_MASK                 = 0x003020B0UL;
-    const uint32_t REG_MACRO_0                  = 0x003020D8UL;
-    const uint32_t REG_MACRO_1                  = 0x003020DCUL;
-    const uint32_t REG_MEDIAFIFO_READ           = 0x00309014UL;
-    const uint32_t REG_MEDIAFIFO_WRITE          = 0x00309018UL;
-    const uint32_t REG_OUTBITS                  = 0x0030205CUL;
-    const uint32_t REG_PATCHED_ANALOG           = 0x00302170UL;
-    const uint32_t REG_PATCHED_TOUCH_FAULT      = 0x0030216CUL;
-    const uint32_t REG_PCLK                     = 0x00302070UL;
-    const uint32_t REG_PCLK_POL                 = 0x0030206CUL;
-    const uint32_t REG_PLAY                     = 0x0030208CUL;
-    const uint32_t REG_PLAYBACK_FORMAT          = 0x003020C4UL;
-    const uint32_t REG_PLAYBACK_FREQ            = 0x003020C0UL;
-    const uint32_t REG_PLAYBACK_LENGTH          = 0x003020B8UL;
-    const uint32_t REG_PLAYBACK_LOOP            = 0x003020C8UL;
-    const uint32_t REG_PLAYBACK_PLAY            = 0x003020CCUL;
-    const uint32_t REG_PLAYBACK_READPTR         = 0x003020BCUL;
-    const uint32_t REG_PLAYBACK_START           = 0x003020B4UL;
-    const uint32_t REG_PWM_DUTY                 = 0x003020D4UL;
-    const uint32_t REG_PWM_HZ                   = 0x003020D0UL;
-    const uint32_t REG_RENDERMODE               = 0x00302010UL;
-    const uint32_t REG_ROMSUB_SEL               = 0x003020F0UL;
-    const uint32_t REG_ROTATE                   = 0x00302058UL;
-    const uint32_t REG_SNAPFORMAT               = 0x0030201CUL;
-    const uint32_t REG_SNAPSHOT                 = 0x00302018UL;
-    const uint32_t REG_SNAPY                    = 0x00302014UL;
-    const uint32_t REG_SOUND                    = 0x00302088UL;
-    const uint32_t REG_SPI_EARLY_TX             = 0x0030217CUL;
-    const uint32_t REG_SPI_WIDTH                = 0x00302188UL;
-    const uint32_t REG_SWIZZLE                  = 0x00302064UL;
-    const uint32_t REG_TAG                      = 0x0030207CUL;
-    const uint32_t REG_TAG_X                    = 0x00302074UL;
-    const uint32_t REG_TAG_Y                    = 0x00302078UL;
-    const uint32_t REG_TAP_CRC                  = 0x00302024UL;
-    const uint32_t REG_TAP_MASK                 = 0x00302028UL;
-    const uint32_t REG_TOUCH_ADC_MODE           = 0x00302108UL;
-    const uint32_t REG_TOUCH_CHARGE             = 0x0030210CUL;
-    const uint32_t REG_TOUCH_DIRECT_XY          = 0x0030218CUL;
-    const uint32_t REG_TOUCH_DIRECT_Z1Z2        = 0x00302190UL;
-    const uint32_t REG_TOUCH_FAULT              = 0x00302170UL;
-    const uint32_t REG_TOUCH_MODE               = 0x00302104UL;
-    const uint32_t REG_TOUCH_OVERSAMPLE         = 0x00302114UL;
-    const uint32_t REG_TOUCH_RAW_XY             = 0x0030211CUL;
-    const uint32_t REG_TOUCH_RZ                 = 0x00302120UL;
-    const uint32_t REG_TOUCH_RZTHRESH           = 0x00302118UL;
-    const uint32_t REG_TOUCH_SCREEN_XY          = 0x00302124UL;
-    const uint32_t REG_TOUCH_SETTLE             = 0x00302110UL;
-    const uint32_t REG_TOUCH_TAG                = 0x0030212CUL;
-    const uint32_t REG_TOUCH_TAG_XY             = 0x00302128UL;
-    const uint32_t REG_TOUCH_TAG1               = 0x00302134UL;
-    const uint32_t REG_TOUCH_TAG1_XY            = 0x00302130UL;
-    const uint32_t REG_TOUCH_TAG2               = 0x0030213CUL;
-    const uint32_t REG_TOUCH_TAG2_XY            = 0x00302138UL;
-    const uint32_t REG_TOUCH_TAG3               = 0x00302144UL;
-    const uint32_t REG_TOUCH_TAG3_XY            = 0x00302140UL;
-    const uint32_t REG_TOUCH_TAG4               = 0x0030214CUL;
-    const uint32_t REG_TOUCH_TAG4_XY            = 0x00302148UL;
-    const uint32_t REG_TOUCH_TRANSFORM_A        = 0x00302150UL;
-    const uint32_t REG_TOUCH_TRANSFORM_B        = 0x00302154UL;
-    const uint32_t REG_TOUCH_TRANSFORM_C        = 0x00302158UL;
-    const uint32_t REG_TOUCH_TRANSFORM_D        = 0x0030215CUL;
-    const uint32_t REG_TOUCH_TRANSFORM_E        = 0x00302160UL;
-    const uint32_t REG_TOUCH_TRANSFORM_F        = 0x00302164UL;
-    const uint32_t REG_TRACKER                  = 0x00309000UL;
-    const uint32_t REG_TRACKER_1                = 0x00309004UL;
-    const uint32_t REG_TRACKER_2                = 0x00309008UL;
-    const uint32_t REG_TRACKER_3                = 0x0030900CUL;
-    const uint32_t REG_TRACKER_4                = 0x00309010UL;
-    const uint32_t REG_TRIM                     = 0x00302180UL;
-    const uint32_t REG_VCYCLE                   = 0x00302040UL;
-    const uint32_t REG_VOFFSET                  = 0x00302044UL;
-    const uint32_t REG_VOL_PB                   = 0x00302080UL;
-    const uint32_t REG_VOL_SOUND                = 0x00302084UL;
-    const uint32_t REG_VSIZE                    = 0x00302048UL;
-    const uint32_t REG_VSYNC0                   = 0x0030204CUL;
-    const uint32_t REG_VSYNC1                   = 0x00302050UL;
+    const static uint32_t REG_ANA_COMP          = 0x00302184UL;
+    const static uint32_t REG_ANALOG            = 0x0030216CUL;
+    const static uint32_t REG_BIST_EN           = 0x00302174UL;
+    const static uint32_t REG_BUSYBITS          = 0x003020E8UL;
+    const static uint32_t REG_CLOCK             = 0x00302008UL;
+    const static uint32_t REG_CMD_DL            = 0x00302100UL;
+    const static uint32_t REG_CMD_READ          = 0x003020F8UL;
+    const static uint32_t REG_CMD_WRITE         = 0x003020FCUL;
+    const static uint32_t REG_CMDB_SPACE        = 0x00302574UL;
+    const static uint32_t REG_CMDB_WRITE        = 0x00302578UL;
+    const static uint32_t REG_CPURESET          = 0x00302020UL;
+    const static uint32_t REG_CRC               = 0x00302178UL;
+    const static uint32_t REG_CSPREAD           = 0x00302068UL;
+    const static uint32_t REG_CTOUCH_EXTENDED   = 0x00302108UL;
+    const static uint32_t REG_CTOUCH_TOUCH0_XY  = 0x00302124UL;
+    const static uint32_t REG_CTOUCH_TOUCH1_XY  = 0x0030211CUL;
+    const static uint32_t REG_CTOUCH_TOUCH2_XY  = 0x0030218CUL;
+    const static uint32_t REG_CTOUCH_TOUCH3_XY  = 0x00302190UL;
+    const static uint32_t REG_CTOUCH_TOUCH4_X   = 0x0030216CUL;
+    const static uint32_t REG_CTOUCH_TOUCH4_Y   = 0x00302120UL;
+    const static uint32_t REG_CYA_TOUCH         = 0x00302168UL;
+    const static uint32_t REG_DATESTAMP         = 0x00302564UL;
+    const static uint32_t REG_DITHER            = 0x00302060UL;
+    const static uint32_t REG_DLSWAP            = 0x00302054UL;
+    const static uint32_t REG_FRAMES            = 0x00302004UL;
+    const static uint32_t REG_FREQUENCY         = 0x0030200CUL;
+    const static uint32_t REG_GPIO              = 0x00302094UL;
+    const static uint32_t REG_GPIO_DIR          = 0x00302090UL;
+    const static uint32_t REG_GPIOX             = 0x0030209CUL;
+    const static uint32_t REG_GPIOX_DIR         = 0x00302098UL;
+    const static uint32_t REG_HCYCLE            = 0x0030202CUL;
+    const static uint32_t REG_HOFFSET           = 0x00302030UL;
+    const static uint32_t REG_HSIZE             = 0x00302034UL;
+    const static uint32_t REG_HSYNC0            = 0x00302038UL;
+    const static uint32_t REG_HSYNC1            = 0x0030203CUL;
+    const static uint32_t REG_ID                = 0x00302000UL;
+    const static uint32_t REG_INT_EN            = 0x003020ACUL;
+    const static uint32_t REG_INT_FLAGS         = 0x003020A8UL;
+    const static uint32_t REG_INT_MASK          = 0x003020B0UL;
+    const static uint32_t REG_MACRO_0           = 0x003020D8UL;
+    const static uint32_t REG_MACRO_1           = 0x003020DCUL;
+    const static uint32_t REG_MEDIAFIFO_READ    = 0x00309014UL;
+    const static uint32_t REG_MEDIAFIFO_WRITE   = 0x00309018UL;
+    const static uint32_t REG_OUTBITS           = 0x0030205CUL;
+    const static uint32_t REG_PATCHED_ANALOG    = 0x00302170UL;
+    const static uint32_t REG_PATCHED_TOUCH_FAUL= 0x0030216CUL;
+    const static uint32_t REG_PCLK              = 0x00302070UL;
+    const static uint32_t REG_PCLK_POL          = 0x0030206CUL;
+    const static uint32_t REG_PLAY              = 0x0030208CUL;
+    const static uint32_t REG_PLAYBACK_FORMAT   = 0x003020C4UL;
+    const static uint32_t REG_PLAYBACK_FREQ     = 0x003020C0UL;
+    const static uint32_t REG_PLAYBACK_LENGTH   = 0x003020B8UL;
+    const static uint32_t REG_PLAYBACK_LOOP     = 0x003020C8UL;
+    const static uint32_t REG_PLAYBACK_PLAY     = 0x003020CCUL;
+    const static uint32_t REG_PLAYBACK_READPTR  = 0x003020BCUL;
+    const static uint32_t REG_PLAYBACK_START    = 0x003020B4UL;
+    const static uint32_t REG_PWM_DUTY          = 0x003020D4UL;
+    const static uint32_t REG_PWM_HZ            = 0x003020D0UL;
+    const static uint32_t REG_RENDERMODE        = 0x00302010UL;
+    const static uint32_t REG_ROMSUB_SEL        = 0x003020F0UL;
+    const static uint32_t REG_ROTATE            = 0x00302058UL;
+    const static uint32_t REG_SNAPFORMAT        = 0x0030201CUL;
+    const static uint32_t REG_SNAPSHOT          = 0x00302018UL;
+    const static uint32_t REG_SNAPY             = 0x00302014UL;
+    const static uint32_t REG_SOUND             = 0x00302088UL;
+    const static uint32_t REG_SPI_EARLY_TX      = 0x0030217CUL;
+    const static uint32_t REG_SPI_WIDTH         = 0x00302188UL;
+    const static uint32_t REG_SWIZZLE           = 0x00302064UL;
+    const static uint32_t REG_TAG               = 0x0030207CUL;
+    const static uint32_t REG_TAG_X             = 0x00302074UL;
+    const static uint32_t REG_TAG_Y             = 0x00302078UL;
+    const static uint32_t REG_TAP_CRC           = 0x00302024UL;
+    const static uint32_t REG_TAP_MASK          = 0x00302028UL;
+    const static uint32_t REG_TOUCH_ADC_MODE    = 0x00302108UL;
+    const static uint32_t REG_TOUCH_CHARGE      = 0x0030210CUL;
+    const static uint32_t REG_TOUCH_DIRECT_XY   = 0x0030218CUL;
+    const static uint32_t REG_TOUCH_DIRECT_Z1Z2 = 0x00302190UL;
+    const static uint32_t REG_TOUCH_FAULT       = 0x00302170UL;
+    const static uint32_t REG_TOUCH_MODE        = 0x00302104UL;
+    const static uint32_t REG_TOUCH_OVERSAMPLE  = 0x00302114UL;
+    const static uint32_t REG_TOUCH_RAW_XY      = 0x0030211CUL;
+    const static uint32_t REG_TOUCH_RZ          = 0x00302120UL;
+    const static uint32_t REG_TOUCH_RZTHRESH    = 0x00302118UL;
+    const static uint32_t REG_TOUCH_SCREEN_XY   = 0x00302124UL;
+    const static uint32_t REG_TOUCH_SETTLE      = 0x00302110UL;
+    const static uint32_t REG_TOUCH_TAG         = 0x0030212CUL;
+    const static uint32_t REG_TOUCH_TAG_XY      = 0x00302128UL;
+    const static uint32_t REG_TOUCH_TAG1        = 0x00302134UL;
+    const static uint32_t REG_TOUCH_TAG1_XY     = 0x00302130UL;
+    const static uint32_t REG_TOUCH_TAG2        = 0x0030213CUL;
+    const static uint32_t REG_TOUCH_TAG2_XY     = 0x00302138UL;
+    const static uint32_t REG_TOUCH_TAG3        = 0x00302144UL;
+    const static uint32_t REG_TOUCH_TAG3_XY     = 0x00302140UL;
+    const static uint32_t REG_TOUCH_TAG4        = 0x0030214CUL;
+    const static uint32_t REG_TOUCH_TAG4_XY     = 0x00302148UL;
+    const static uint32_t REG_TOUCH_TRANSFORM_A = 0x00302150UL;
+    const static uint32_t REG_TOUCH_TRANSFORM_B = 0x00302154UL;
+    const static uint32_t REG_TOUCH_TRANSFORM_C = 0x00302158UL;
+    const static uint32_t REG_TOUCH_TRANSFORM_D = 0x0030215CUL;
+    const static uint32_t REG_TOUCH_TRANSFORM_E = 0x00302160UL;
+    const static uint32_t REG_TOUCH_TRANSFORM_F = 0x00302164UL;
+    const static uint32_t REG_TRACKER           = 0x00309000UL;
+    const static uint32_t REG_TRACKER_1         = 0x00309004UL;
+    const static uint32_t REG_TRACKER_2         = 0x00309008UL;
+    const static uint32_t REG_TRACKER_3         = 0x0030900CUL;
+    const static uint32_t REG_TRACKER_4         = 0x00309010UL;
+    const static uint32_t REG_TRIM              = 0x00302180UL;
+    const static uint32_t REG_VCYCLE            = 0x00302040UL;
+    const static uint32_t REG_VOFFSET           = 0x00302044UL;
+    const static uint32_t REG_VOL_PB            = 0x00302080UL;
+    const static uint32_t REG_VOL_SOUND         = 0x00302084UL;
+    const static uint32_t REG_VSIZE             = 0x00302048UL;
+    const static uint32_t REG_VSYNC0            = 0x0030204CUL;
+    const static uint32_t REG_VSYNC1            = 0x00302050UL;
 
     // Display list commands (ProgGuide ch.4)
     typedef enum
@@ -401,30 +486,30 @@ public:
     }   OPT; // 16 bits
 
     // Constants for registers and command parameters
-    const uint32_t DLSWAP_DONE                 = 0x00000000UL;
-    const uint32_t DLSWAP_FRAME                = 0x00000002UL;
-    const uint32_t DLSWAP_LINE                 = 0x00000001UL;
-    const uint32_t INT_CMDEMPTY                = 0x00000020UL;
-    const uint32_t INT_CMDFLAG                 = 0x00000040UL;
-    const uint32_t INT_CONVCOMPLETE            = 0x00000080UL;
-    const uint32_t INT_G8                      = 0x00000012UL;
-    const uint32_t INT_L8C                     = 0x0000000CUL;
-    const uint32_t INT_PLAYBACK                = 0x00000010UL;
-    const uint32_t INT_SOUND                   = 0x00000008UL;
-    const uint32_t INT_SWAP                    = 0x00000001UL;
-    const uint32_t INT_TAG                     = 0x00000004UL;
-    const uint32_t INT_TOUCH                   = 0x00000002UL;
-    const uint32_t INT_VGA                     = 0x0000000DUL;
-    const uint32_t LINEAR_SAMPLES              = 0x00000000UL;
-    const uint32_t TOUCHMODE_CONTINUOUS        = 0x00000003UL;
-    const uint32_t TOUCHMODE_FRAME             = 0x00000002UL;
-    const uint32_t TOUCHMODE_OFF               = 0x00000000UL;
-    const uint32_t TOUCHMODE_ONESHOT           = 0x00000001UL;
-    const uint32_t ULAW_SAMPLES                = 0x00000001UL;
-    const uint32_t VOL_ZERO                    = 0x00000000UL;
-    const uint32_t ADC_DIFFERENTIAL            = 0x00000001UL;
-    const uint32_t ADC_SINGLE_ENDED            = 0x00000000UL;
-    const uint32_t ADPCM_SAMPLES               = 0x00000002UL;
+    const static uint32_t DLSWAP_DONE           = 0x00000000UL;
+    const static uint32_t DLSWAP_FRAME          = 0x00000002UL;
+    const static uint32_t DLSWAP_LINE           = 0x00000001UL;
+    const static uint32_t INT_CMDEMPTY          = 0x00000020UL;
+    const static uint32_t INT_CMDFLAG           = 0x00000040UL;
+    const static uint32_t INT_CONVCOMPLETE      = 0x00000080UL;
+    const static uint32_t INT_G8                = 0x00000012UL;
+    const static uint32_t INT_L8C               = 0x0000000CUL;
+    const static uint32_t INT_PLAYBACK          = 0x00000010UL;
+    const static uint32_t INT_SOUND             = 0x00000008UL;
+    const static uint32_t INT_SWAP              = 0x00000001UL;
+    const static uint32_t INT_TAG               = 0x00000004UL;
+    const static uint32_t INT_TOUCH             = 0x00000002UL;
+    const static uint32_t INT_VGA               = 0x0000000DUL;
+    const static uint32_t LINEAR_SAMPLES        = 0x00000000UL;
+    const static uint32_t TOUCHMODE_CONTINUOUS  = 0x00000003UL;
+    const static uint32_t TOUCHMODE_FRAME       = 0x00000002UL;
+    const static uint32_t TOUCHMODE_OFF         = 0x00000000UL;
+    const static uint32_t TOUCHMODE_ONESHOT     = 0x00000001UL;
+    const static uint32_t ULAW_SAMPLES          = 0x00000001UL;
+    const static uint32_t VOL_ZERO              = 0x00000000UL;
+    const static uint32_t ADC_DIFFERENTIAL      = 0x00000001UL;
+    const static uint32_t ADC_SINGLE_ENDED      = 0x00000000UL;
+    const static uint32_t ADPCM_SAMPLES         = 0x00000002UL;
 
     //-----------------------------------------------------------------------
     // "Host commands", see Datasheet 4.1.5 p.16
@@ -529,9 +614,9 @@ protected:
     const uint16_t  _vcenter;           // Vertical center in pixels_
 
     // State variables
-    uint16_t        _cmd_index;         // Graphics engine cmd write index
+    CmdIndex        _cmd_index;         // Graphics engine cmd write index
                                         //   (offset from RAM_CMD)
-    uint16_t        _dl_index;          // Display list write index
+    DLIndex         _dl_index;          // Display list write index
                                         //   (offset from RAM_DL)
     bool            _selected;          // True if CS active
 
@@ -1104,9 +1189,9 @@ protected:
     // co-processor into the output parameters of a command.
     uint32_t                            // Returns value
     CmdRead32(
-        uint16_t cmdindex)
+        CmdIndex cmdindex)              // Command index to read from
     {
-        return REG_Read_32(RAM_CMD + (cmdindex % RAM_CMD_SIZE));
+        return REG_Read_32(RAM_CMD + cmdindex.index());
     }
 
 protected:
@@ -1391,17 +1476,15 @@ protected:
     // return value.
     //
     // Referred to as "dl" in the documentation.
-    uint16_t                            // Returns DL index after increment
+    DLIndex                             // Returns updated DL index
     DLAdd(
         uint32_t value)                 // Value to write
     {
         DBG_TRAFFIC("dl(%08X)\n", value);
 
-        REG_Write_32(RAM_DL + _dl_index, value);
+        REG_Write_32(RAM_DL + _dl_index.index(), value);
 
-        // Update the index. The optimizer should be smart enough to turn
-        // the mod operator into an AND operation.
-        _dl_index = (_dl_index + 4) % RAM_DL_SIZE;
+        _dl_index += 4;
 
         return _dl_index;
     }
@@ -1423,12 +1506,12 @@ protected:
     //
     // This function basically cancels all commands that were already queued
     // for the co-processor (if any), and restarts the building of the queue.
-    int16_t                             // Returns updated Cmd index
+    CmdIndex                            // Returns updated Cmd index
     CmdInitWriteIndex()
     {
         DBG_TRAFFIC("Reading REG_CMD_WRITE\n");
 
-        _cmd_index = REG_Read_16(REG_CMD_WRITE);
+        _cmd_index = CmdIndex(REG_Read_16(REG_CMD_WRITE));
 
         return _cmd_index;
     }
@@ -1438,34 +1521,23 @@ protected:
     // Get amount of free space in the command queue
     //
     // The number is based on the location where the chip is reading
-    // (not writing).
+    // (not writing). So this can be called repeatedly to check if there's
+    // enough space for a certain command, e.g. when sending large amounts
+    // of data such as a bitmap.
     uint16_t                            // Returns number of bytes free
     CmdGetFreeCmdSpace()
     {
-        uint16_t result = ((4096 - 4) - ((_cmd_index - REG_Read_16(REG_CMD_READ)) & 0xFFF));
+        // Calculate the used space by subtracting the read index from
+        // our write index. This value is wrapped around the maximum value.
+        uint16_t used_space = (_cmd_index - REG_Read_16(REG_CMD_READ)).index();
+
+        // Subtract the used space from the total space but reduce the
+        // total space by 4 to avoid wrapping the maximum value to zero.
+        uint16_t result = (RAM_CMD_SIZE - 4) - used_space;
 
         DBG_TRAFFIC("Free command space is %u", result);
 
         return result;
-    }
-
-protected:
-    //-----------------------------------------------------------------------
-    // Internal function to update the command index and wraps it around
-    //
-    // Note that a negative bump is allowed. This is useful e.g. to find out
-    // where the previously stored data is. Since the internal index is
-    // an unsigned, there are no issues with mod-operators using negative
-    // values, which is not defined in the C/C++ standards. 
-    uint16_t                            // Returns updated Cmd index
-    BumpCmdIndex(
-        int16_t len)                    // Length to add (not checked)
-    {
-        _cmd_index += (uint16_t)len;
-
-        // Wrap around if necessary. The optimizer should be smart enought
-        // to substitue an AND operation for the MOD operation.
-        return (_cmd_index %= RAM_CMD_SIZE);
     }
 
 protected:
@@ -1475,28 +1547,28 @@ protected:
     // The class keeps track of the current location and updates it to the
     // next location. Normally it's not necessary to do anything with the
     // return value.
-    uint16_t                            // Returns Cmd index after increment
+    CmdIndex                            // Returns updated Cmd index
     CmdSelect(
         uint32_t command)               // Command to queue
     {
         DBG_GEEK("cmd(%08X)\n", command);
 
-        SelectAndAddress(RAM_CMD + _cmd_index, WRITE);
+        SelectAndAddress(RAM_CMD + _cmd_index.index(), WRITE);
 
         // Send the command
         Send32(command);
 
-        return BumpCmdIndex(4);
+        return _cmd_index += 4;
     }
 
 protected:
     //-----------------------------------------------------------------------
     // Store a co-processor command with no parameters
-    uint16_t                            // Returns Cmd index after increment
+    CmdIndex                            // Returns updated Cmd index
     Cmd(
         uint32_t command)               // Command to queue
     {
-        uint16_t result = CmdSelect(command);
+        CmdIndex result = CmdSelect(command);
 
         Select(false);
 
@@ -1510,12 +1582,12 @@ public:
     // This can be used to wait for the end of a frame, and to retrieve
     // the location where the next command will be stored without storing
     // another command first.
-    uint16_t                            // Returns Cmd index
+    CmdIndex                            // Returns updated Cmd index
     CmdWaitComplete()
     {
         DBG_TRAFFIC("Waiting for coprocessor\n");
 
-        while (REG_Read_16(REG_CMD_READ) != _cmd_index);
+        while (REG_Read_16(REG_CMD_READ) != _cmd_index.index());
 
         return _cmd_index;
     }
@@ -1527,13 +1599,13 @@ public:
     // This updates the write pointer on the engine to the current write
     // location so that the coprocessor starts executing commands in the
     // command queue.
-    uint16_t                            // Returns Cmd index
+    CmdIndex                            // Returns updated Cmd index
     CmdExecute(
         bool waituntilcomplete = false) // True = wait until done
     {
         DBG_TRAFFIC("Executing command queue\n");
 
-        REG_Write_16(REG_CMD_WRITE, _cmd_index);
+        REG_Write_16(REG_CMD_WRITE, _cmd_index.index());
 
         if (waituntilcomplete)
         {
@@ -1553,7 +1625,7 @@ protected:
 
         CmdWaitComplete();
 
-        uint16_t p; // Cmd index of output stored here
+        CmdIndex p; // Cmd index of output stored here
         cmd_GETPTR(&p);
 
         // Execute the command
@@ -1574,7 +1646,7 @@ protected:
 public:
     //-----------------------------------------------------------------------
     // Set clearing color and optionally clear the screen, stencil and tag
-    uint16_t                            // Returns updated Cmd index
+    CmdIndex                            // Returns updated Cmd index
     CmdClear(
         uint8_t red,                    // Red
         uint8_t green,                  // Green
@@ -1597,7 +1669,7 @@ public:
 public:
     //-----------------------------------------------------------------------
     // Set color for next commands
-    uint16_t                            // Returns updated Cmd index
+    CmdIndex                            // Returns updated Cmd index
     CmdColor(
         uint8_t red,                    // Red
         uint8_t green,                  // Green
@@ -1609,7 +1681,7 @@ public:
 public:
     //-----------------------------------------------------------------------
     // Set color for next commands using RGB value
-    uint16_t                            // Returns updated Cmd index
+    CmdIndex                            // Returns updated Cmd index
     CmdColor(
         uint32_t rgb24)                 // red/green/blue combination
     {
@@ -1619,7 +1691,7 @@ public:
 public:
     //-----------------------------------------------------------------------
     // Set alpha (transparency) for next commands
-    uint16_t                            // Returns updated Cmd index
+    CmdIndex                            // Returns updated Cmd index
     CmdAlpha(
         uint8_t alpha)                  // Alpha value
     {
@@ -1692,8 +1764,8 @@ public:
     // and that negative fixed-point does not use 2's complement.
     #define ENC(name, declaration, parameters, value) \
         uint32_t ENC_##name declaration { return ENC_CMD_##name | value; } \
-        uint16_t dl_##name declaration { return DLAdd(ENC_##name parameters); } \
-        uint16_t cmd_##name declaration { return Cmd(ENC_##name parameters); }
+        DLIndex   dl_##name declaration { return DLAdd(ENC_##name parameters); } \
+        CmdIndex cmd_##name declaration { return Cmd(ENC_##name parameters); }
     ENC(ALPHA_FUNC,        (FUNC     func,     uint8_t  ref8),                                                          (func, ref8),                               N(func,     10,  8) | N(ref8,      7,  0)                                                            ) // ProgGuide 4.4 p.92
     ENC(BEGIN,             (BEGIN    prim),                                                                             (prim),                                     N(prim,      3,  0)                                                                                  ) // ProgGuide 4.5 p.94
     ENC(BITMAP_HANDLE,     (uint8_t  handle5),                                                                          (handle5),                                  N(handle5,   4,  0)                                                                                  ) // ProgGuide 4.6 p.96
@@ -1767,18 +1839,24 @@ public:
     // Transfer from host RAM
     #define MM(value, len) (result += SendData(value, len))
     // 4 byte output value: Store Cmd index to parameter and bump cmd index
-    #define Q4(name) ((*name = _cmd_index + (result % RAM_CMD_SIZE)), V4(0))
+    #define Q4(name) ((*name = _cmd_index + result), V4(0))
     // Send command and data, keep EVE selected
     #define CMDSEL(name, declaration, value) \
-        uint16_t cmd_##name declaration { CmdSelect(ENC_CMD_##name); int16_t result = 0; return BumpCmdIndex(value); }
+        CmdIndex cmd_##name declaration { CmdSelect(ENC_CMD_##name); int16_t result = 0;(value); return _cmd_index += result; }
     // Send command and de-select
     #define CMD(name, declaration, value) \
-        uint16_t cmd_##name declaration { CmdSelect(ENC_CMD_##name); int16_t result = 0; BumpCmdIndex(value); Select(false); return result; }
-    // Send command that has outputs (To be changed later)
+        CmdIndex cmd_##name declaration { CmdSelect(ENC_CMD_##name); int16_t result = 0;(value); Select(false); return _cmd_index += result; }
+    // Send command that has outputs (May possibly be changed later)
+    // (The caller should start the co-processor and wait until it executes
+    // the commands, then retrieve the output data using CmdRead with the
+    // command index values that are returned by the function)
     #define CMDOUT CMDSEL
-    CMD(DLSTART,        (),                                                                                                                             (0                                                                                  )) // ProgGuide 5.11 p.162
-    CMD(SWAP,           (),                                                                                                                             (0                                                                                  )) // ProgGuide 5.12 p.163
-    CMD(COLDSTART,      (),                                                                                                                             (0                                                                                  )) // ProgGuide 5.13 p.163
+    // Send command with no parameters and de-select
+    #define CMD0(name) \
+        CmdIndex cmd_##name() { return Cmd(ENC_CMD_##name); }
+    CMD0(DLSTART                                                                                                                                                                                                                             ) // ProgGuide 5.11 p.162
+    CMD0(SWAP                                                                                                                                                                                                                                ) // ProgGuide 5.12 p.163
+    CMD0(COLDSTART                                                                                                                                                                                                                           ) // ProgGuide 5.13 p.163
     CMD(INTERRUPT,      (uint32_t ms32),                                                                                                                (V4(ms32)                                                                           )) // ProgGuide 5.14 p.164
     CMD(APPEND,         (uint32_t ptr32, uint32_t num32),                                                                                               (V4(ptr32),V4(num32)                                                                )) // ProgGuide 5.15 p.165
     CMD(REGREAD,        (uint32_t ptr32, uint32_t result32),                                                                                            (V4(ptr32),V4(result32)                                                             )) // ProgGuide 5.16 p.166
@@ -1787,9 +1865,9 @@ public:
     CMDSEL(LOADIMAGE,   (uint32_t ptr32, OPT options32, uint32_t num, const uint8_t *data),                                                             (V4(ptr32),V4(options32),MM(data, num)                                              )) // ProgGuide 5.19 p.169
     CMD(MEDIAFIFO,      (uint32_t ptr32, uint32_t size32),                                                                                              (V4(ptr32),V4(size32)                                                               )) // ProgGuide 5.20 p.170
     CMD(PLAYVIDEO,      (OPT options),                                                                                                                  (V4(options)                                                                        )) // ProgGuide 5.21 p.171
-    CMD(VIDEOSTART,     (),                                                                                                                             (0                                                                                  )) // ProgGuide 5.22 p.172
+    CMD0(VIDEOSTART                                                                                                                                                                                                                          ) // ProgGuide 5.22 p.172
     CMD(VIDEOFRAME,     (uint32_t dst32, uint32_t ptr32),                                                                                               (V4(dst32),V4(ptr32)                                                                )) // ProgGuide 5.23 p.173
-    CMDOUT(MEMCRC,      (uint32_t ptr32, uint32_t num32, uint16_t *xresult32),                                                                          (V4(ptr32),V4(num32),Q4(xresult32)                                                  )) // ProgGuide 5.24 p.173
+    CMDOUT(MEMCRC,      (uint32_t ptr32, uint32_t num32, CmdIndex *xresult32),                                                                          (V4(ptr32),V4(num32),Q4(xresult32)                                                  )) // ProgGuide 5.24 p.173
     CMD(MEMZERO,        (uint32_t ptr32, uint32_t num32),                                                                                               (V4(ptr32),V4(num32)                                                                )) // ProgGuide 5.25 p.174
     CMD(MEMSET,         (uint32_t ptr32, uint32_t value8, uint32_t num32),                                                                              (V4(ptr32),V4(value8),V4(num32)                                                     )) // ProgGuide 5.26 p.175
     CMD(MEMCPY,         (uint32_t dest32, uint32_t src32, uint32_t num32),                                                                              (V4(dest32),V4(src32),V4(num32)                                                     )) // ProgGuide 5.27 p.176
@@ -1809,20 +1887,20 @@ public:
     CMD(TEXT,           (int16_t x16, int16_t y16, int16_t font5, OPT options, const char *message, uint16_t len = 0),                                  (V2(x16),V2(y16),V2(font5),V2(options),SS(message, len)                             )) // ProgGuide 5.41 p.213
     CMD(SETBASE,        (uint32_t b6),                                                                                                                  (V4(b6)                                                                             )) // ProgGuide 5.42 p.216
     CMD(NUMBER,         (int16_t x16, uint16_t y16, int16_t font5, OPT options, int32_t n32),                                                           (V2(x16),V2(y16),V2(font5),V2(options),V4(n32)                                      )) // ProgGuide 5.43 p.217
-    CMD(LOADIDENTITY,   (),                                                                                                                             (0                                                                                  )) // ProgGuide 5.44 p.220
-    CMD(SETMATRIX,      (),                                                                                                                             (0                                                                                  )) // ProgGuide 5.45 p.220
-    CMDOUT(GETMATRIX,   (uint16_t *xa32, uint16_t *xb32, uint16_t *xc32, uint16_t *xd32, int16_t *xe32, int16_t *xf32),                                 (Q4(xa32),Q4(xb32),Q4(xc32),Q4(xd32),Q4(xe32),Q4(xf32)                              )) // ProgGuide 5.46 p.221
-    CMDOUT(GETPTR,      (uint16_t *xptr),                                                                                                               (Q4(xptr)                                                                           )) // ProgGuide 5.47 p.222
-    CMDOUT(GETPROPS,    (uint16_t *xptr32, uint16_t *xwidth32, uint16_t *xheight32),                                                                    (Q4(xptr32),Q4(xwidth32),Q4(xheight32)                                              )) // ProgGuide 5.48 p.223
+    CMD0(LOADIDENTITY                                                                                                                                                                                                                        ) // ProgGuide 5.44 p.220
+    CMD0(SETMATRIX                                                                                                                                                                                                                           ) // ProgGuide 5.45 p.220
+    CMDOUT(GETMATRIX,   (CmdIndex *xa32, CmdIndex *xb32, CmdIndex *xc32, CmdIndex *xd32, CmdIndex *xe32, CmdIndex *xf32),                               (Q4(xa32),Q4(xb32),Q4(xc32),Q4(xd32),Q4(xe32),Q4(xf32)                              )) // ProgGuide 5.46 p.221
+    CMDOUT(GETPTR,      (CmdIndex *xptr),                                                                                                               (Q4(xptr)                                                                           )) // ProgGuide 5.47 p.222
+    CMDOUT(GETPROPS,    (CmdIndex *xptr32, CmdIndex *xwidth32, CmdIndex *xheight32),                                                                    (Q4(xptr32),Q4(xwidth32),Q4(xheight32)                                              )) // ProgGuide 5.48 p.223
     CMD(SCALE,          (int32_t sx32, int32_t sy32),                                                                                                   (V4(sx32),V4(sy32)                                                                  )) // ProgGuide 5.49 p.223
     CMD(ROTATE,         (int32_t a32),                                                                                                                  (V4(a32)                                                                            )) // ProgGuide 5.50 p.225
     CMD(TRANSLATE,      (int32_t tx32, int32_t ty32),                                                                                                   (V4(tx32),V4(ty32)                                                                  )) // ProgGuide 5.51 p.226
-    CMDOUT(CALIBRATE,   (uint16_t *xresult32),                                                                                                          (Q4(xresult32)                                                                      )) // ProgGuide 5.52 p.227
+    CMDOUT(CALIBRATE,   (CmdIndex *xresult32),                                                                                                          (Q4(xresult32)                                                                      )) // ProgGuide 5.52 p.227
     CMD(SETROTATE,      (uint32_t r32),                                                                                                                 (V4(r32)                                                                            )) // ProgGuide 5.53 p.228
     CMD(SPINNER,        (int16_t x16, int16_t y16, uint16_t style2, uint16_t scale2),                                                                   (V2(x16),V2(y16),V2(style2),V2(scale2)                                              )) // ProgGuide 5.54 p.229
-    CMD(SCREENSAVER,    (),                                                                                                                             (0                                                                                  )) // ProgGuide 5.55 p.233
+    CMD0(SCREENSAVER                                                                                                                                                                                                                         ) // ProgGuide 5.55 p.233
     CMD(SKETCH,         (int16_t x16, int16_t y16, uint16_t w16, uint16_t h16, uint32_t ptr32, FORMAT format),                                          (V2(x16),V2(y16),V2(w16),V2(h16),V4(ptr32),V2(format),V2(0)                         )) // ProgGuide 5.55 p.234
-    CMD(STOP,           (),                                                                                                                             (0                                                                                  )) // ProgGuide 5.57 p.236
+    CMD0(STOP                                                                                                                                                                                                                                ) // ProgGuide 5.57 p.236
     CMD(SETFONT,        (uint32_t font5, uint32_t ptr32),                                                                                               (V4(font5),V4(ptr32)                                                                )) // ProgGuide 5.58 p.237
     CMD(SETFONT2,       (uint32_t font5, uint32_t ptr32, uint32_t firstchar8),                                                                          (V4(font5),V4(ptr32),V4(firstchar8)                                                 )) // ProgGuide 5.59 p.237
     CMD(SETSCRATCH,     (uint32_t handle5),                                                                                                             (V4(handle5)                                                                        )) // ProgGuide 5.60 p.239
@@ -1831,7 +1909,7 @@ public:
     CMD(SNAPSHOT,       (uint32_t ptr32),                                                                                                               (V4(ptr32)                                                                          )) // ProgGuide 5.63 p.245
     CMD(SNAPSHOT2,      (FORMAT format, uint32_t ptr32, int16_t x16, int16_t y16, int16_t w16, int16_t h16),                                            (V4(format),V4(ptr32),V2(x16),V2(y16),V2(w16),V2(h16)                               )) // ProgGuide 5.64 p.246
     CMD(SETBITMAP,      (uint32_t addr32, FORMAT format, uint16_t width16, uint16_t height16),                                                          (V4(addr32),V2(format),V2(width16),V2(height16),V2(0)                               )) // ProgGuide 5.65 p.247
-    CMD(LOGO,           (),                                                                                                                             (0                                                                                  )) // ProgGuide 5.66 p.249
+    CMD0(LOGO                                                                                                                                                                                                                                ) // ProgGuide 5.66 p.249
     CMD(CSKETCH,        (int16_t x16, int16_t y16, uint16_t w16, uint16_t h16, uint32_t ptr32, FORMAT format, uint16_t freq16),                         (V2(x16),V2(y16),V2(w16),V2(h16),V4(ptr32),V2(format),V2(freq16)                    )) // ProgGuide 5.67 p.249
 
     /////////////////////////////////////////////////////////////////////////
@@ -1843,13 +1921,13 @@ public:
 public:
     //-----------------------------------------------------------------------
     // Finish the current display list and swap and execute
-    uint16_t                            // Returns updated Cmd index
+    CmdIndex                            // Returns updated Cmd index
     CmdDlFinish(
         bool waituntilcomplete = false) // True = wait until done
     {
         cmd_DISPLAY();
 
-        Cmd(ENC_CMD_SWAP);
+        cmd_SWAP();
 
         return CmdExecute(waituntilcomplete);
     }
@@ -1857,7 +1935,7 @@ public:
 public:
     //-----------------------------------------------------------------------
     // Draw a point at the given location
-    uint16_t                            // Returns updated Cmd index
+    CmdIndex                            // Returns updated Cmd index
     Point(
         uint16_t point_x,               // X coordinate
         uint16_t point_y,               // Y coordinate
@@ -1881,7 +1959,7 @@ public:
 public:
     //-----------------------------------------------------------------------
     // Draw a line between two points
-    uint16_t                            // Returns updated Cmd index
+    CmdIndex                            // Returns updated Cmd index
     Line(
         uint16_t x0,                    // Start X
         uint16_t y0,                    // Start Y
@@ -1910,7 +1988,7 @@ public:
 public:
     //-----------------------------------------------------------------------
     // Draw a closed rectangle
-    uint16_t                            // Returns updated Cmd index
+    CmdIndex                            // Returns updated Cmd index
     FilledRectangle(
         uint16_t x0,                    // X coord of 1st pt in cur precision
         uint16_t y0,                    // Y coord of 1st pt in cur precision
@@ -1938,7 +2016,7 @@ public:
 public:
     //-----------------------------------------------------------------------
     // Draw an open rectangle
-    uint16_t                            // Returns updated Cmd index
+    CmdIndex                            // Returns updated Cmd index
     OpenRectangle(
         uint16_t x0,                    // X coord of 1st pt in cur precision
         uint16_t y0,                    // Y coord of 1st pt in cur precision
