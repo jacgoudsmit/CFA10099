@@ -817,7 +817,7 @@ public:
         // Repeatedly poll REG_ID with up to 250 maximum retries and a 1 ms
         // delay between retries.
         // The register should return 0x7C when the processor is running.
-        if (!REG_Wait8(REG_ID, 0x7C, 250, 1))
+        if (!RegWait8(REG_ID, 0x7C, 250, 1))
         {
             // TODO: report problem and return false
             DBG_STAT("Timeout waiting for ID of 0x7C.\n");
@@ -827,7 +827,7 @@ public:
 
         // Repeatedly poll REG_CPURESET until it returns 0 meaning the reset
         // is complete
-        while (!REG_Wait8(REG_CPURESET, 0, 250, 1))
+        while (!RegWait8(REG_CPURESET, 0, 250, 1))
         {
             // TODO: report problem and return false
             DBG_STAT("Timeout waiting for EVE CPU reset.\n");
@@ -839,7 +839,7 @@ public:
         // Read the chip ID and match it with the expected value
         if (_profile._chipid != ANY)
         {
-            uint32_t chip_id = REG_Read_32(CHIP_ID_ADDRESS);
+            uint32_t chip_id = RegRead32(CHIP_ID_ADDRESS);
             if (_profile._chipid != (CHIPID)chip_id)
             {
                 DBG_STAT("Chip ID mismatch: Wanted %08X, got %08X\n", _profile._chipid, chip_id);
@@ -851,7 +851,7 @@ public:
         // Store the frequency in the register if requested
         if (_profile._frequency)
         {
-            REG_Write_32(REG_FREQUENCY, _profile._frequency);
+            RegWrite32(REG_FREQUENCY, _profile._frequency);
         }
 
         // Get the current write pointer from the EVE
@@ -865,42 +865,42 @@ public:
         }
 
         // Set PCLK to zero; don't clock the LCD until later
-        REG_Write_8(REG_PCLK, 0);
+        RegWrite8(REG_PCLK, 0);
 
         // Turn off backlight
-        REG_Write_8(REG_PWM_DUTY, 0);
+        RegWrite8(REG_PWM_DUTY, 0);
 
         // Initialize display parameters
-        REG_Write_16(REG_HSIZE,    _profile._hsize);   // active display width
-        REG_Write_16(REG_HCYCLE,   _profile._hcycle);  // total number of clocks per line, incl front/back porch
-        REG_Write_16(REG_HOFFSET,  _profile._hoffset); // start of active line
-        REG_Write_16(REG_HSYNC0,   _profile._hsync0);  // start of horizontal sync pulse
-        REG_Write_16(REG_HSYNC1,   _profile._hsync1);  // end of horizontal sync pulse
-        REG_Write_16(REG_VSIZE,    _profile._vsize);   // active display height
-        REG_Write_16(REG_VCYCLE,   _profile._vcycle);  // total number of lines per screen, incl pre/post
-        REG_Write_16(REG_VOFFSET,  _profile._voffset); // start of active screen
-        REG_Write_16(REG_VSYNC0,   _profile._vsync0);  // start of vertical sync pulse
-        REG_Write_16(REG_VSYNC1,   _profile._vsync1);  // end of vertical sync pulse
-        REG_Write_8( REG_SWIZZLE,  _profile._swizzle); // FT800 output to LCD - pin order
-        REG_Write_8( REG_PCLK_POL, _profile._pclkpol); // LCD data is clocked in on this PCLK edge
+        RegWrite16(REG_HSIZE,    _profile._hsize);   // active display width
+        RegWrite16(REG_HCYCLE,   _profile._hcycle);  // total number of clocks per line, incl front/back porch
+        RegWrite16(REG_HOFFSET,  _profile._hoffset); // start of active line
+        RegWrite16(REG_HSYNC0,   _profile._hsync0);  // start of horizontal sync pulse
+        RegWrite16(REG_HSYNC1,   _profile._hsync1);  // end of horizontal sync pulse
+        RegWrite16(REG_VSIZE,    _profile._vsize);   // active display height
+        RegWrite16(REG_VCYCLE,   _profile._vcycle);  // total number of lines per screen, incl pre/post
+        RegWrite16(REG_VOFFSET,  _profile._voffset); // start of active screen
+        RegWrite16(REG_VSYNC0,   _profile._vsync0);  // start of vertical sync pulse
+        RegWrite16(REG_VSYNC1,   _profile._vsync1);  // end of vertical sync pulse
+        RegWrite8( REG_SWIZZLE,  _profile._swizzle); // FT800 output to LCD - pin order
+        RegWrite8( REG_PCLK_POL, _profile._pclkpol); // LCD data is clocked in on this PCLK edge
         // Don't set PCLK yet - wait for just after the first display list
 
         // Set 10 mA or 5 mA drive for PCLK, DISP, VSYNC, DE, RGB lines and
         // back light PWM.
         if (_profile._lcd10ma)
         {
-            REG_Write_16(REG_GPIOX, REG_Read_16(REG_GPIOX) | 0x1000);
+            RegWrite16(REG_GPIOX, RegRead16(REG_GPIOX) | 0x1000);
         }
         else
         {
-            REG_Write_16(REG_GPIOX, REG_Read_16(REG_GPIOX) & ~0x1000);
+            RegWrite16(REG_GPIOX, RegRead16(REG_GPIOX) & ~0x1000);
         }
 
         // Enable or disable RGB clock spreading for reduced noise
-        REG_Write_8(REG_CSPREAD, _profile._cspread ? 1 : 0);
+        RegWrite8(REG_CSPREAD, _profile._cspread ? 1 : 0);
 
         // Enable or disable dithering
-        REG_Write_8(REG_DITHER, _profile._dither ? 1 : 0);
+        RegWrite8(REG_DITHER, _profile._dither ? 1 : 0);
 
         // Enable output bits on LCD outputs
         // Encoded as 3 values in 3 groups of 3 bits.
@@ -927,22 +927,26 @@ public:
         // may not be available this early.
         // This just shows a black screen
         _dl_index = 0;
-        DLAdd(ENC_CLEAR_COLOR(0));
-        DLAdd(ENC_CLEAR(1,1,1));// color, stencil, tags
-        DLAdd(ENC_DISPLAY());
+        dl_CLEAR_COLOR(0);
+        dl_CLEAR(1, 1, 1); // color, stencil, tag
+        dl_DISPLAY();
 
         // Tell the EVE that it can swap display lists at the next available
-        // frame boundary
-        REG_Write_32(REG_DLSWAP, 2 /* DLSWAP_FRAME */);
+        // frame boundary.
+        // TODO: Make this a parameter for Begin()?
+        RegWrite32(REG_DLSWAP, DLSWAP_FRAME);
 
-        // Enable the DISP line of the LCD
-        REG_Write_16(REG_GPIOX, REG_Read_16(REG_GPIOX) | 0x8000);
+        // Enable the DISP line of the LCD.
+        // TODO: Is this specific to CFA10099?
+        RegWrite16(REG_GPIOX, RegRead16(REG_GPIOX) | 0x8000);
 
         // Now start clocking the data to the LCD panel
-        REG_Write_8(REG_PCLK, _profile._pclk);
+        RegWrite8(REG_PCLK, _profile._pclk);
 
-        REG_Write_16(REG_PWM_HZ, 250);
-        REG_Write_8(REG_PWM_DUTY, 128);
+        // Initialize backlight
+        // TODO: Make these into parameter for Begin()?
+        RegWrite16(REG_PWM_HZ, 250);
+        RegWrite8(REG_PWM_DUTY, 128);
 
         // TODO: Calibrate touch screen if necessary
 
@@ -977,9 +981,9 @@ protected:
     TouchInit()
     {
         // Disable touch
-        REG_Write_8(REG_TOUCH_MODE, 0);
+        RegWrite8(REG_TOUCH_MODE, 0);
         // Eliminate any false touches
-        REG_Write_16(REG_TOUCH_RZTHRESH, 0);
+        RegWrite16(REG_TOUCH_RZTHRESH, 0);
 
         return true;
     }
@@ -990,234 +994,51 @@ protected:
 
 protected:
     //-----------------------------------------------------------------------
-    // Send a host command
+    // Read an 8-bit value
     //
-    // Referred to as "host_command()" in the FT81X documentation
-    void HostCommand(
-        HOSTCMD cmd,                    // Command to send
-        uint8_t parameter = 0)          // Parameter for the command
-    {
-        DBG_TRAFFIC("Host command %X\n", cmd);
-
-        Select(true);
-
-        // 1st byte is the command
-        _spi.transfer((uint8_t)cmd);
-
-        // 2nd byte is the parameter
-        _spi.transfer(parameter);
-
-        // 3rd byte is always 0
-        _spi.transfer(0);
-
-        Select(false);
-    }
-
-protected:
-    //-----------------------------------------------------------------------
-    // Select the chip and send the host command to read or write data
-    //
-    // Referred to as "Host Memory Read/Write" in the documentation
-    void SelectAndAddress(
-        uint32_t address,               // Address to access
-        MEM_OPERATION operation)        // Read or write
-    {
-        DBG_TRAFFIC("Address %X %s\n", address, operation == WRITE ? "WRITE" : "READ");
-        Select(true);
-
-        // Send Operation plus high address byte
-        _spi.transfer((uint8_t)(address >> 16) | (uint8_t)operation);
-
-        // Send middle address byte
-        _spi.transfer((uint8_t)(address >> 8));
-
-        // Send low address byte
-        _spi.transfer((uint8_t)(address));
-    }
-
-protected:
-    //-----------------------------------------------------------------------
-    // Read a one-byte register from FT81X memory
-    //
-    // Referred to as "rd8" in the documentation
-    uint8_t                             // Returns data at given address
-    REG_Read_8(
-        uint32_t address)               // Address (22 bits; not checked)
+    // Internal variables aren't updated and the Select line is not changed.
+    uint8_t Receive8() const
     {
         uint8_t result;
 
-        // Send the 24-bit address and operation flag.
-        SelectAndAddress(address, READ);
-
-        // Send dummy byte
-        _spi.transfer(0);
-
-        // Send another dummy; the EVE returns the data
+        // Send dummy value; the EVE returns the data
         result = _spi.transfer(0);
-
-        Select(false);
-
-        DBG_TRAFFIC("Reg %X = %X\n", address, result);
 
         return result;
     }
 
 protected:
     //-----------------------------------------------------------------------
-    // Read a 2-byte register from FT81X memory
+    // Read a 16-bit value in little-endian format
     //
-    // Referred to as "rd16" in the documentation
-    uint16_t                            // Returns data at given address
-    REG_Read_16(
-        uint32_t address)               // Address (22 bits; not checked)
+    // Internal variables aren't updated and the Select line is not changed.
+    uint16_t Receive16() const
     {
         uint16_t result;
-        
-        // Send the 24-bit address and operation flag.
-        SelectAndAddress(address, READ);
 
-        // Send dummy byte
-        _spi.transfer(0);
-
-        // Send more dummies; the EVE returns the data
+        // Send dummy values; the EVE returns the data
         result =  (uint16_t)_spi.transfer(0);
         result |= (uint16_t)_spi.transfer(0) << 8;
 
-        Select(false);
-
-        DBG_TRAFFIC("Reg %X = %X\n", address, result);
-
         return result;
     }
 
 protected:
     //-----------------------------------------------------------------------
-    // Read a 4-byte register from FT81X memory
+    // Read a 32-bit value in little-endian format
     //
-    // Referred to as "rd32" in the documentation
-    uint32_t                            // Returns data at given address
-    REG_Read_32(
-        uint32_t address)               // Address (22 bits; not checked)
+    // Internal variables aren't updated and the Select line is not changed.
+    uint32_t Receive32() const
     {
         uint32_t result;
-        
-        // Send the 24-bit address and operation flag.
-        SelectAndAddress(address, READ);
 
-        // Send dummy byte
-        _spi.transfer(0);
-
-        // Send more dummies; the EVE returns the data
+        // Send dummy values; the EVE returns the data
         result =  (uint32_t)_spi.transfer(0);
         result |= (uint32_t)_spi.transfer(0) << 8;
         result |= (uint32_t)_spi.transfer(0) << 16;
         result |= (uint32_t)_spi.transfer(0) << 24;
 
-        Select(false);
-
-        DBG_TRAFFIC("Reg %X = %X\n", address, result);
-
         return result;
-    }
-
-protected:
-    //-----------------------------------------------------------------------
-    // Repeat reading a register until it matches the given value
-    //
-    // The function returns 0 if the register didn't contain the expected
-    // value after the given number of retries. In other words, the result
-    // is successful if the function returns nonzero.
-    uint8_t                             // Returns num retries remaining
-    REG_Wait8(
-        uint32_t address,               // Address to read
-        uint8_t value,                  // Expected value
-        uint8_t maxtries,               // Maximum number of tries
-        uint32_t delay_between_tries)   // Delay between tries in ms
-    {
-        uint8_t result = maxtries;
-        uint8_t read_value = 0;
-
-        while (result)
-        {
-            read_value = REG_Read_8(address);
-
-            if (read_value == value)
-            {
-                DBG_TRAFFIC("Match after %u tries\n", maxtries - result);
-                return result;
-            }
-
-            delay(delay_between_tries);
-
-            result--;
-        }
-
-        DBG_GEEK("Timeout waiting for %X to become %X, last read value was %X\n", address, value, read_value);
-        return result;
-    }
-
-protected:
-    //-----------------------------------------------------------------------
-    // Read a block of memory
-    void ReadArray(
-        uint32_t address,               // Address to read from
-        uint16_t length,                // Number of bytes to read
-        uint8_t *destination)           // Destination buffer
-    {
-        DBG_TRAFFIC("Reading %X length %X (%u dec)\n", address, length, length);
-
-        SelectAndAddress(address, READ);
-
-        // Send dummy byte
-        _spi.transfer(0);
-
-        // Read the block of memory
-        // TODO: Use block transfer of SPI class?
-        for (uint16_t i = 0; i < length; i++)
-        {
-            *destination++ = _spi.transfer(0);
-        }
-
-        Select(false);
-    }
-
-protected:
-    //-----------------------------------------------------------------------
-    // Read a 32 bit value from the given Cmd index
-    //
-    // This can be used to retrieve a value that gets stored by the
-    // co-processor into the output parameters of a command.
-    uint32_t                            // Returns value
-    CmdRead32(
-        CmdIndex cmdindex)              // Command index to read from
-    {
-        return REG_Read_32(RAM_CMD + cmdindex.index());
-    }
-
-protected:
-    //-----------------------------------------------------------------------
-    // Write a 32 bit value in little-endian format
-    //
-    // Internal variables aren't updated and the Select line is not changed.
-    void Send32(
-        uint32_t value) const
-    {
-        _spi.transfer((uint8_t)(value));
-        _spi.transfer((uint8_t)(value >> 8));
-        _spi.transfer((uint8_t)(value >> 16));
-        _spi.transfer((uint8_t)(value >> 24));
-    }
-
-protected:
-    //-----------------------------------------------------------------------
-    // Write a 16-bit value in little-endian format
-    //
-    // Internal variables aren't updated and the Select line is not changed.
-    void Send16(
-        uint16_t value) const
-    {
-        _spi.transfer((uint8_t)(value));
-        _spi.transfer((uint8_t)(value >> 8));
     }
 
 protected:
@@ -1237,7 +1058,33 @@ protected:
 
 protected:
     //-----------------------------------------------------------------------
-    // Send data from RAM to the chip
+    // Write a 16-bit value in little-endian format
+    //
+    // Internal variables aren't updated and the Select line is not changed.
+    void Send16(
+        uint16_t value) const
+    {
+        _spi.transfer((uint8_t)(value));
+        _spi.transfer((uint8_t)(value >> 8));
+    }
+
+protected:
+    //-----------------------------------------------------------------------
+    // Write a 32 bit value in little-endian format
+    //
+    // Internal variables aren't updated and the Select line is not changed.
+    void Send32(
+        uint32_t value) const
+    {
+        _spi.transfer((uint8_t)(value));
+        _spi.transfer((uint8_t)(value >> 8));
+        _spi.transfer((uint8_t)(value >> 16));
+        _spi.transfer((uint8_t)(value >> 24));
+    }
+
+protected:
+    //-----------------------------------------------------------------------
+    // Send data from a RAM buffer to the chip
     //
     // The function sends a block of data of the given size. If the number
     // of requested bytes is not a multiple of 4, it sends extra nul bytes
@@ -1246,9 +1093,9 @@ protected:
     // The return value is the number of bytes that was sent to the EVE,
     // which may be more than the requested length.
     uint16_t                            // Returns number of bytes sent
-    SendData(
+    SendBuffer(
         const uint8_t *data,            // Data buffer to send
-        uint16_t len)                   // Buffer length
+        uint16_t len) const             // Buffer length
     {
         uint16_t result = 0;
 
@@ -1280,7 +1127,7 @@ protected:
 
 protected:
     //-----------------------------------------------------------------------
-    // Send a string as part of a co-processor command
+    // Send a string, padded to a multiple of 4 bytes
     //
     // The function reads a string from RAM, and transfers it to the EVE
     // It stops either when it finds the end of the source string, or when
@@ -1297,7 +1144,7 @@ protected:
     uint16_t                            // Returns number of bytes sent
     SendString(
         const char *message,            // Characters to send, '\0' is end
-        uint16_t maxlen)                // Max input length including \0
+        uint16_t maxlen) const          // Max input length including \0
     {
         uint16_t result = 0;
 
@@ -1368,7 +1215,7 @@ protected:
     uint16_t                            // Returns number of bytes sent
     SendStringF(
         const __FlashStringHelper *message, // Characters to send, '\0' is end
-        uint16_t maxlen)                // Max input length including \0
+        uint16_t maxlen) const          // Max input length including \0
     {
         char buf[256];
 
@@ -1385,12 +1232,209 @@ protected:
         return SendString(buf, maxlen);
     }
 
+    /////////////////////////////////////////////////////////////////////////
+    // HOST COMMANDS
+    /////////////////////////////////////////////////////////////////////////
+
+protected:
+    //-----------------------------------------------------------------------
+    // Send a host command
+    //
+    // Referred to as "host_command()" in the FT81X documentation
+    void HostCommand(
+        HOSTCMD cmd,                    // Command to send
+        uint8_t parameter = 0)          // Parameter for the command
+    {
+        DBG_TRAFFIC("Host command %X\n", cmd);
+
+        Select(true);
+
+        // 1st byte is the command
+        _spi.transfer((uint8_t)cmd);
+
+        // 2nd byte is the parameter
+        _spi.transfer(parameter);
+
+        // 3rd byte is always 0
+        _spi.transfer(0);
+
+        Select(false);
+    }
+
+protected:
+    //-----------------------------------------------------------------------
+    // Select the chip and send the host command to read or write data
+    //
+    // Referred to as "Host Memory Read/Write" in the documentation
+    void SelectAndAddress(
+        uint32_t address,               // Address to access
+        MEM_OPERATION operation)        // Read or write
+    {
+        DBG_TRAFFIC("Address %X %s\n", address, operation == WRITE ? "WRITE" : "READ");
+        Select(true);
+
+        // Send Operation plus high address byte
+        _spi.transfer((uint8_t)(address >> 16) | (uint8_t)operation);
+
+        // Send middle address byte
+        _spi.transfer((uint8_t)(address >> 8));
+
+        // Send low address byte
+        _spi.transfer((uint8_t)(address));
+    }
+
+    /////////////////////////////////////////////////////////////////////////
+    // MEMORY OPERATIONS
+    /////////////////////////////////////////////////////////////////////////
+
+protected:
+    //-----------------------------------------------------------------------
+    // Read a one-byte register from FT81X memory
+    //
+    // Referred to as "rd8" in the documentation
+    uint8_t                             // Returns data at given address
+    RegRead8(
+        uint32_t address)               // Address (22 bits; not checked)
+    {
+        uint8_t result;
+
+        // Send the 24-bit address and operation flag.
+        SelectAndAddress(address, READ);
+
+        // Send dummy byte
+        _spi.transfer(0);
+
+        // Send another dummy; the EVE returns the data
+        result = Receive8();
+
+        Select(false);
+
+        DBG_TRAFFIC("Reg %X = %X\n", address, result);
+
+        return result;
+    }
+
+protected:
+    //-----------------------------------------------------------------------
+    // Read a 2-byte register from FT81X memory
+    //
+    // Referred to as "rd16" in the documentation
+    uint16_t                            // Returns data at given address
+    RegRead16(
+        uint32_t address)               // Address (22 bits; not checked)
+    {
+        uint16_t result;
+
+        // Send the 24-bit address and operation flag.
+        SelectAndAddress(address, READ);
+
+        // Send dummy byte
+        _spi.transfer(0);
+
+        // Get the value
+        result = Receive16();
+
+        Select(false);
+
+        DBG_TRAFFIC("Reg %X = %X\n", address, result);
+
+        return result;
+    }
+
+protected:
+    //-----------------------------------------------------------------------
+    // Read a 4-byte register from FT81X memory
+    //
+    // Referred to as "rd32" in the documentation
+    uint32_t                            // Returns data at given address
+    RegRead32(
+        uint32_t address)               // Address (22 bits; not checked)
+    {
+        uint32_t result;
+
+        // Send the 24-bit address and operation flag.
+        SelectAndAddress(address, READ);
+
+        // Send dummy byte
+        _spi.transfer(0);
+
+        // Get the value
+        result = Receive32();
+
+        Select(false);
+
+        DBG_TRAFFIC("Reg %X = %X\n", address, result);
+
+        return result;
+    }
+
+protected:
+    //-----------------------------------------------------------------------
+    // Repeat reading a register until it matches the given value
+    //
+    // The function returns 0 if the register didn't contain the expected
+    // value after the given number of retries. In other words, the result
+    // is successful if the function returns nonzero.
+    uint8_t                             // Returns num retries remaining
+    RegWait8(
+        uint32_t address,               // Address to read
+        uint8_t value,                  // Expected value
+        uint8_t maxtries,               // Maximum number of tries
+        uint32_t delay_between_tries)   // Delay between tries in ms
+    {
+        uint8_t result = maxtries;
+        uint8_t read_value = 0;
+
+        while (result)
+        {
+            read_value = RegRead8(address);
+
+            if (read_value == value)
+            {
+                DBG_TRAFFIC("Match after %u tries\n", maxtries - result);
+                return result;
+            }
+
+            delay(delay_between_tries);
+
+            result--;
+        }
+
+        DBG_GEEK("Timeout waiting for %X to become %X, last read value was %X\n", address, value, read_value);
+        return result;
+    }
+
+protected:
+    //-----------------------------------------------------------------------
+    // Read a block of memory
+    void RegReadArray(
+        uint32_t address,               // Address to read from
+        uint16_t length,                // Number of bytes to read
+        uint8_t *destination)           // Destination buffer
+    {
+        DBG_TRAFFIC("Reading %X length %X (%u dec)\n", address, length, length);
+
+        SelectAndAddress(address, READ);
+
+        // Send dummy byte
+        _spi.transfer(0);
+
+        // Read the block of memory
+        // TODO: Use block transfer of SPI class?
+        for (uint16_t i = 0; i < length; i++)
+        {
+            *destination++ = _spi.transfer(0);
+        }
+
+        Select(false);
+    }
+
 protected:
     //-----------------------------------------------------------------------
     // Write an 8 bit register
     //
     // Referred to as "wr8" in the documentation
-    void REG_Write_8(
+    void RegWrite8(
         uint32_t address,               // Address to store data
         uint8_t value)                  // Value to store
     {
@@ -1408,7 +1452,7 @@ protected:
     // Write a 16 bit register
     //
     // Referred to as "wr16" in the documentation
-    void REG_Write_16(
+    void RegWrite16(
         uint32_t address,               // Address to store data
         uint16_t value)                 // Value to store
     {
@@ -1426,7 +1470,7 @@ protected:
     // Write a 32 bit register
     //
     // Referred to as "wr32" in the documentation
-    void REG_Write_32(
+    void RegWrite32(
         uint32_t address,               // Address to store data
         uint32_t value)                 // Value to store
     {
@@ -1457,7 +1501,7 @@ protected:
     // NOTE: It shouldn't be necessary to get the display list index
     // without storing a command first, so there is no function to get the
     // current index without storing anything.
-    void DLReset(
+    void DLResetIndex(
         uint16_t index = 0)             // New index
     {
         DBG_TRAFFIC("DL reset %u\n", index);
@@ -1482,7 +1526,7 @@ protected:
     {
         DBG_TRAFFIC("dl(%08X)\n", value);
 
-        REG_Write_32(RAM_DL + _dl_index.index(), value);
+        RegWrite32(RAM_DL + _dl_index.index(), value);
 
         _dl_index += 4;
 
@@ -1492,6 +1536,19 @@ protected:
     /////////////////////////////////////////////////////////////////////////
     // CO-PROCESSOR SUPPORT
     /////////////////////////////////////////////////////////////////////////
+
+protected:
+    //-----------------------------------------------------------------------
+    // Read a 32 bit value from the given Cmd index
+    //
+    // This can be used to retrieve a value that gets stored by the
+    // co-processor into the output parameters of a command.
+    uint32_t                            // Returns value
+    CmdRead32(
+        CmdIndex cmdindex)              // Command index to read from
+    {
+        return RegRead32(RAM_CMD + cmdindex.index());
+    }
 
 protected:
     //-----------------------------------------------------------------------
@@ -1511,7 +1568,7 @@ protected:
     {
         DBG_TRAFFIC("Reading REG_CMD_WRITE\n");
 
-        _cmd_index = CmdIndex(REG_Read_16(REG_CMD_WRITE));
+        _cmd_index = CmdIndex(RegRead16(REG_CMD_WRITE));
 
         return _cmd_index;
     }
@@ -1529,7 +1586,7 @@ protected:
     {
         // Calculate the used space by subtracting the read index from
         // our write index. This value is wrapped around the maximum value.
-        uint16_t used_space = (_cmd_index - REG_Read_16(REG_CMD_READ)).index();
+        uint16_t used_space = (_cmd_index - RegRead16(REG_CMD_READ)).index();
 
         // Subtract the used space from the total space but reduce the
         // total space by 4 to avoid wrapping the maximum value to zero.
@@ -1563,7 +1620,7 @@ protected:
 
 protected:
     //-----------------------------------------------------------------------
-    // Store a co-processor command with no parameters
+    // Store a co-processor command with no parameters, and de-select the EVE
     CmdIndex                            // Returns updated Cmd index
     Cmd(
         uint32_t command)               // Command to queue
@@ -1579,6 +1636,11 @@ public:
     //-----------------------------------------------------------------------
     // Wait until the co-processor has caught up.
     //
+    // NOTE: This should only be called after starting the co-processor.
+    // TODO: For this reason, the function should not exist: If called
+    // under the wrong circumstances, it waits forever in a busy loop.
+    // We should have a CmdIsComplete function that returns immediately.
+    //
     // This can be used to wait for the end of a frame, and to retrieve
     // the location where the next command will be stored without storing
     // another command first.
@@ -1587,7 +1649,10 @@ public:
     {
         DBG_TRAFFIC("Waiting for coprocessor\n");
 
-        while (REG_Read_16(REG_CMD_READ) != _cmd_index.index());
+        while (RegRead16(REG_CMD_READ) != _cmd_index.index())
+        {
+            // Nothing
+        }
 
         return _cmd_index;
     }
@@ -1605,7 +1670,7 @@ public:
     {
         DBG_TRAFFIC("Executing command queue\n");
 
-        REG_Write_16(REG_CMD_WRITE, _cmd_index.index());
+        RegWrite16(REG_CMD_WRITE, _cmd_index.index());
 
         if (waituntilcomplete)
         {
@@ -1615,94 +1680,11 @@ public:
         return _cmd_index;
     }
 
-protected:
-    //-----------------------------------------------------------------------
-    // Get pointer to first available byte in RAM_G
-    uint32_t                            // Returns pointer in RAM_G
-    CmdGetPtr()
-    {
-        uint32_t result;
-
-        CmdWaitComplete();
-
-        CmdIndex p; // Cmd index of output stored here
-        cmd_GETPTR(&p);
-
-        // Execute the command
-        CmdExecute(true);
-
-        // Retrieve the result
-        result = CmdRead32(p);
-
-        DBG_TRAFFIC("RAM_G first free byte is at %08X\n", result);
-
-        return result;
-    }
-
-    /////////////////////////////////////////////////////////////////////////
-    // CO-PROCESSOR QUEUEING OF BASIC COMMANDS
-    /////////////////////////////////////////////////////////////////////////
-
-public:
-    //-----------------------------------------------------------------------
-    // Set clearing color and optionally clear the screen, stencil and tag
-    CmdIndex                            // Returns updated Cmd index
-    CmdClear(
-        uint8_t red,                    // Red
-        uint8_t green,                  // Green
-        uint8_t blue,                   // Blue
-        bool clearscreen = true,        // Clear the screen if true
-        bool clearcolor = true,         // Clear the current color if true
-        bool clearstencil = true,       // Clear the stencil if true
-        bool cleartag = true)           // Clear the tag if true
-    {
-        cmd_CLEAR_COLOR_RGB(red, green, blue);
-
-        if (clearscreen || clearcolor || clearstencil || cleartag)
-        {
-            cmd_CLEAR(!!clearcolor, !!clearstencil, !!cleartag);
-        }
-
-        return _cmd_index;
-    }
-
-public:
-    //-----------------------------------------------------------------------
-    // Set color for next commands
-    CmdIndex                            // Returns updated Cmd index
-    CmdColor(
-        uint8_t red,                    // Red
-        uint8_t green,                  // Green
-        uint8_t blue)                   // Blue
-    {
-        return cmd_COLOR_RGB(red, green, blue);
-    }
-
-public:
-    //-----------------------------------------------------------------------
-    // Set color for next commands using RGB value
-    CmdIndex                            // Returns updated Cmd index
-    CmdColor(
-        uint32_t rgb24)                 // red/green/blue combination
-    {
-        return cmd_COLOR(rgb24);
-    }
-
-public:
-    //-----------------------------------------------------------------------
-    // Set alpha (transparency) for next commands
-    CmdIndex                            // Returns updated Cmd index
-    CmdAlpha(
-        uint8_t alpha)                  // Alpha value
-    {
-        return cmd_COLOR_A(alpha);
-    }
-
-public:
     /////////////////////////////////////////////////////////////////////////
     // COMMAND ENCODING
     /////////////////////////////////////////////////////////////////////////
 
+public:
     //-----------------------------------------------------------------------
     // Macro to encodes a bit field in a uint32_t.
     //
@@ -1837,7 +1819,7 @@ public:
     // Program memory string value
     #define SF(value, maxlen) (result += SendStringF(value, maxlen))
     // Transfer from host RAM
-    #define MM(value, len) (result += SendData(value, len))
+    #define MM(value, len) (result += SendBuffer(value, len))
     // 4 byte output value: Store Cmd index to parameter and bump cmd index
     #define Q4(name) ((*name = _cmd_index + result), V4(0))
     // Send command and data, keep EVE selected
@@ -1913,10 +1895,32 @@ public:
     CMD(CSKETCH,        (int16_t x16, int16_t y16, uint16_t w16, uint16_t h16, uint32_t ptr32, FORMAT format, uint16_t freq16),                         (V2(x16),V2(y16),V2(w16),V2(h16),V4(ptr32),V2(format),V2(freq16)                    )) // ProgGuide 5.67 p.249
 
     /////////////////////////////////////////////////////////////////////////
-    // CO-PROCESSOR HELPER FUNCTIONS
+    // HELPER FUNCTIONS
     /////////////////////////////////////////////////////////////////////////
-    // The following functions combine some commands that are often
-    // used together
+
+protected:
+    //-----------------------------------------------------------------------
+    // Get pointer to first available byte in RAM_G
+    uint32_t                            // Returns pointer in RAM_G
+    CmdGetPtr()
+    {
+        uint32_t result;
+
+        CmdWaitComplete();
+
+        CmdIndex p; // Cmd index of output stored here
+        cmd_GETPTR(&p);
+
+        // Execute the command
+        CmdExecute(true);
+
+        // Retrieve the result
+        result = CmdRead32(p);
+
+        DBG_TRAFFIC("RAM_G first free byte is at %08X\n", result);
+
+        return result;
+    }
 
 public:
     //-----------------------------------------------------------------------
@@ -1930,6 +1934,61 @@ public:
         cmd_SWAP();
 
         return CmdExecute(waituntilcomplete);
+    }
+
+public:
+    //-----------------------------------------------------------------------
+    // Set clearing color and optionally clear the screen, stencil and tag
+    CmdIndex                            // Returns updated Cmd index
+    CmdClear(
+        uint8_t red,                    // Red
+        uint8_t green,                  // Green
+        uint8_t blue,                   // Blue
+        bool clearscreen = true,        // Clear the screen if true
+        bool clearcolor = true,         // Clear the current color if true
+        bool clearstencil = true,       // Clear the stencil if true
+        bool cleartag = true)           // Clear the tag if true
+    {
+        cmd_CLEAR_COLOR_RGB(red, green, blue);
+
+        if (clearscreen || clearcolor || clearstencil || cleartag)
+        {
+            cmd_CLEAR(!!clearcolor, !!clearstencil, !!cleartag);
+        }
+
+        return _cmd_index;
+    }
+
+public:
+    //-----------------------------------------------------------------------
+    // Set color for next commands
+    CmdIndex                            // Returns updated Cmd index
+    CmdColor(
+        uint8_t red,                    // Red
+        uint8_t green,                  // Green
+        uint8_t blue)                   // Blue
+    {
+        return cmd_COLOR_RGB(red, green, blue);
+    }
+
+public:
+    //-----------------------------------------------------------------------
+    // Set color for next commands using RGB value
+    CmdIndex                            // Returns updated Cmd index
+    CmdColor(
+        uint32_t rgb24)                 // red/green/blue combination
+    {
+        return cmd_COLOR(rgb24);
+    }
+
+public:
+    //-----------------------------------------------------------------------
+    // Set alpha (transparency) for next commands
+    CmdIndex                            // Returns updated Cmd index
+    CmdAlpha(
+        uint8_t alpha)                  // Alpha value
+    {
+        return cmd_COLOR_A(alpha);
     }
 
 public:
