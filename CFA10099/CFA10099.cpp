@@ -231,7 +231,7 @@ void loop()
     steve.CmdWaitComplete();
 
     // Start the command list
-    steve.CmdDlStart();
+    steve.cmd_DLSTART();
 
     // Clear the screen (and clear the current color, stencil and tag)
     steve.CmdClear(0, 0, 0);

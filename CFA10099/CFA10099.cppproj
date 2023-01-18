@@ -641,7 +641,7 @@ build.keylayout=US_ENGLISH
         <visualmicro.application.name>arduino16x</visualmicro.application.name>
         <visualmicro.package.name>teensy</visualmicro.package.name>
         <visualmicro.platform.name>teensy4</visualmicro.platform.name>
-        <arduino.upload.port>usb:0/140000/0/2</arduino.upload.port>
+        <arduino.upload.port>usb:0/140000/0/5</arduino.upload.port>
         <config.Debug.customdebug_teensy41_debugger_type>universal</config.Debug.customdebug_teensy41_debugger_type>
       </VisualMicroSettings>
     </VisualMicroSettings>
@@ -1245,7 +1245,7 @@ build.keylayout=US_ENGLISH
         <visualmicro.application.name>arduino16x</visualmicro.application.name>
         <visualmicro.package.name>teensy</visualmicro.package.name>
         <visualmicro.platform.name>teensy4</visualmicro.platform.name>
-        <arduino.upload.port>usb:0/140000/0/2</arduino.upload.port>
+        <arduino.upload.port>usb:0/140000/0/5</arduino.upload.port>
         <config.Debug.customdebug_teensy41_debugger_type>universal</config.Debug.customdebug_teensy41_debugger_type>
       </VisualMicroSettings>
     </VisualMicroSettings>

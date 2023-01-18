@@ -70,6 +70,7 @@ class BounceDemo
 
         // Draw the ball -- a point (filled circle)
         eve.Point(_x_position, _y_position, _ball_size);
+        //eve.cmd_TEXT(_x_position / 16, _y_position / 16, 31, eve.OPT_CENTER, "StEVE");
 
         //========== RUBBER BAND TETHER ==========
         // Draw the rubber band.

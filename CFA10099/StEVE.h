@@ -160,6 +160,7 @@ public:
     // Display list commands (ProgGuide ch.4)
     typedef enum
     {
+        // Display List commands
         ENC_CMD_DISPLAY                 = 0x00000000,
         ENC_CMD_BITMAP_SOURCE           = 0x01000000,
         ENC_CMD_CLEAR_COLOR_RGB         = 0x02000000,
@@ -210,6 +211,80 @@ public:
         ENC_CMD_NOP                     = 0x2D000000,
         ENC_CMD_VERTEX2F                = 0x40000000, // Encoded in ProgGuide as 1<<22
         ENC_CMD_VERTEX2II               = 0x80000000, // Encoded in ProgGuide as 2<<22
+
+        // Co-processor commands
+        ENC_CMD_DLSTART                 = 0xFFFFFF00,
+        ENC_CMD_SWAP                    = 0xFFFFFF01,
+        ENC_CMD_INTERRUPT               = 0xFFFFFF02,
+        ENC_CMD_BGCOLOR                 = 0xFFFFFF09,
+        ENC_CMD_FGCOLOR                 = 0xFFFFFF0A,
+        ENC_CMD_GRADIENT                = 0xFFFFFF0B,
+        ENC_CMD_TEXT                    = 0xFFFFFF0C,
+        ENC_CMD_BUTTON                  = 0xFFFFFF0D,
+        ENC_CMD_KEYS                    = 0xFFFFFF0E,
+        ENC_CMD_PROGRESS                = 0xFFFFFF0F,
+        ENC_CMD_SLIDER                  = 0xFFFFFF10,
+        ENC_CMD_SCROLLBAR               = 0xFFFFFF11,
+        ENC_CMD_TOGGLE                  = 0xFFFFFF12,
+        ENC_CMD_GAUGE                   = 0xFFFFFF13,
+        ENC_CMD_CLOCK                   = 0xFFFFFF14,
+        ENC_CMD_CALIBRATE               = 0xFFFFFF15,
+        ENC_CMD_SPINNER                 = 0xFFFFFF16,
+        ENC_CMD_STOP                    = 0xFFFFFF17,
+        ENC_CMD_MEMCRC                  = 0xFFFFFF18,
+        ENC_CMD_REGREAD                 = 0xFFFFFF19,
+        ENC_CMD_MEMWRITE                = 0xFFFFFF1A,
+        ENC_CMD_MEMSET                  = 0xFFFFFF1B,
+        ENC_CMD_MEMZERO                 = 0xFFFFFF1C,
+        ENC_CMD_MEMCPY                  = 0xFFFFFF1D,
+        ENC_CMD_APPEND                  = 0xFFFFFF1E,
+        ENC_CMD_SNAPSHOT                = 0xFFFFFF1F,
+        ENC_CMD_INFLATE                 = 0xFFFFFF22,
+        ENC_CMD_GETPTR                  = 0xFFFFFF23,
+        ENC_CMD_LOADIMAGE               = 0xFFFFFF24,
+        ENC_CMD_GETPROPS                = 0xFFFFFF25,
+        ENC_CMD_LOADIDENTITY            = 0xFFFFFF26,
+        ENC_CMD_TRANSLATE               = 0xFFFFFF27,
+        ENC_CMD_SCALE                   = 0xFFFFFF28,
+        ENC_CMD_ROTATE                  = 0xFFFFFF29,
+        ENC_CMD_SETMATRIX               = 0xFFFFFF2A,
+        ENC_CMD_SETFONT                 = 0xFFFFFF2B,
+        ENC_CMD_TRACK                   = 0xFFFFFF2C,
+        ENC_CMD_DIAL                    = 0xFFFFFF2D,
+        ENC_CMD_NUMBER                  = 0xFFFFFF2E,
+        ENC_CMD_SCREENSAVER             = 0xFFFFFF2F,
+        ENC_CMD_SKETCH                  = 0xFFFFFF30,
+        ENC_CMD_LOGO                    = 0xFFFFFF31,
+        ENC_CMD_COLDSTART               = 0xFFFFFF32,
+        ENC_CMD_GETMATRIX               = 0xFFFFFF33,
+        ENC_CMD_GRADCOLOR               = 0xFFFFFF34,
+        ENC_CMD_CSKETCH                 = 0xFFFFFF35,
+        ENC_CMD_SETROTATE               = 0xFFFFFF36,
+        ENC_CMD_SNAPSHOT2               = 0xFFFFFF37,
+        ENC_CMD_SETBASE                 = 0xFFFFFF38,
+        ENC_CMD_MEDIAFIFO               = 0xFFFFFF39,
+        ENC_CMD_PLAYVIDEO               = 0xFFFFFF3A,
+        ENC_CMD_SETFONT2                = 0xFFFFFF3B,
+        ENC_CMD_SETSCRATCH              = 0xFFFFFF3C,
+        ENC_CMD_ROMFONT                 = 0xFFFFFF3F,
+        ENC_CMD_VIDEOSTART              = 0xFFFFFF40,
+        ENC_CMD_VIDEOFRAME              = 0xFFFFFF41,
+        ENC_CMD_SETBITMAP               = 0xFFFFFF43,
+
+/*
+        ENC_CMD_BITMAP_TRANSFORM        = 0xFFFFFF21,
+        ENC_CMD_CRC                     = 0xFFFFFF03,
+        ENC_CMD_EXECUTE                 = 0xFFFFFF07,
+        ENC_CMD_GETPOINT                = 0xFFFFFF08,
+        ENC_CMD_HAMMERAUX               = 0xFFFFFF04,
+        ENC_CMD_IDCT_DELETED            = 0xFFFFFF06,
+        ENC_CMD_INT_RAMSHARED           = 0xFFFFFF3D,
+        ENC_CMD_INT_SWLOADIMAGE         = 0xFFFFFF3E,
+        ENC_CMD_MARCH                   = 0xFFFFFF05,
+        ENC_CMD_SYNC                    = 0xFFFFFF42,
+        ENC_CMD_TOUCH_TRANSFORM         = 0xFFFFFF20,
+*/
+
     }   ENC_CMD;
 
     // Alpha test function for ALPHA_FUNC (ProgGuide 4.4 p.92) and
@@ -260,6 +335,8 @@ public:
         FORMAT_PALETTED4444         = 15,
         FORMAT_PALETTED8            = 16,
         FORMAT_L2                   = 17,
+
+        FORMAT_ARGB8                = 0x20, // Used by SNAPSHOT2 only
     }   FORMAT;
 
     // Bitmap filtering mode for BITMAP_SIZE (ProgGuide 4.9 p.103)
@@ -297,10 +374,6 @@ public:
         STENCIL_INVERT              = 5,
     }   STENCIL;
 
-    /////////////////////////////////////////////////////////////////////////
-    // ENUMS FOR COPROCESSOR COMMANDS
-    /////////////////////////////////////////////////////////////////////////
-
     // Options for coprocessor commands (ProgGuide 5.8 p.158)
     // NOTE: These are flags; they may be combined.
     typedef enum {
@@ -327,7 +400,7 @@ public:
         OPT_NOHANDS                 = 0xC000, // CLOCK
     }   OPT; // 16 bits
 
-    // Constants for parameters to commands
+    // Constants for registers and command parameters
     const uint32_t DLSWAP_DONE                 = 0x00000000UL;
     const uint32_t DLSWAP_FRAME                = 0x00000002UL;
     const uint32_t DLSWAP_LINE                 = 0x00000001UL;
@@ -398,6 +471,7 @@ public:
         CLOCK_EXT_x7_84MHz  = (0x47),   // 7x multiplier and high PLL range
     };
 
+    // Chip identifiers
     enum CHIPID
     {
         // Use this value in the init parameters to skip chip ID checking
@@ -1024,6 +1098,19 @@ protected:
 
 protected:
     //-----------------------------------------------------------------------
+    // Read a 32 bit value from the given Cmd index
+    //
+    // This can be used to retrieve a value that gets stored by the
+    // co-processor into the output parameters of a command.
+    uint32_t                            // Returns value
+    CmdRead32(
+        uint16_t cmdindex)
+    {
+        return REG_Read_32(RAM_CMD + (cmdindex % RAM_CMD_SIZE));
+    }
+
+protected:
+    //-----------------------------------------------------------------------
     // Write a 32 bit value in little-endian format
     //
     // Internal variables aren't updated and the Select line is not changed.
@@ -1065,73 +1152,152 @@ protected:
 
 protected:
     //-----------------------------------------------------------------------
-    // Write up to 4 bytes of a string
+    // Send data from RAM to the chip
     //
-    // The function always sends 4 bytes to the EVE. The bytes
-    // are read from the given string location and following.
+    // The function sends a block of data of the given size. If the number
+    // of requested bytes is not a multiple of 4, it sends extra nul bytes
+    // but doesn't read beyond the end of the buffer.
     //
-    // If the function runs into a terminating nul byte in the string, it
-    // sends it and reads no further into the buffer. It keeps sending nul
-    // bytes until 4 bytes have been sent in total.
-    //
-    // If the function doesn't encounter a nul terminator character, but
-    // reaches the maximum number of characters minus one, it sends one
-    // or more nul characters. So a non-terminated string in memory is
-    // sent with a terminator if the length is correctly set.
-    //
-    // To send a string from RAM to the EVE, call this repeatedly until the
-    // result is 0. You should call the function at least once to store a
-    // valid string in the EVE memory if the source string is blank or if
-    // the length limit is zero.
-    //
-    // Examples:
-    // ("ABCD", 0)  sends '\0', '\0', '\0', '\0' and returns 0 (max length makes it disregard string)
-    // ("ABCD", 1)  sends '\0', '\0', '\0', '\0' and returns 0 (only enough space to insert nul byte)
-    // ("ABCD", 2)  sends 'A',  '\0', '\0', '\0' and returns 0 (not allowed to read the 'B')
-    // ("ABCD", 3)  sends 'A',  'B',  '\0', '\0' and returns 0 (not allowed to read the 'C')
-    // ("ABCD", 4)  sends 'A',  'B',  'C',  '\0' and returns 0 (not allowed to read the 'D')
-    // ("ABCD", 5)  sends 'A',  'B',  'C',  'D'  and returns 1 (must call again to send terminator)
-    // ("A",    0)  sends '\0', '\0', '\0', '\0' and returns 0 (max length makes it disregard string)
-    // ("A",    1)  sends '\0', '\0', '\0', '\0' and returns 0 (only enough space to insert nul byte)
-    // ("A",    2)  sends 'A',  '\0', '\0', '\0' and returns 0 (exactly enough length)
-    // ("A",    3)  sends 'A',  '\0', '\0', '\0' and returns 0 (reading stops after first '\0')
-    // ("A",    4)  sends 'A',  '\0', '\0', '\0' and returns 0 (reading stops after first '\0')
-    // ("A",    5)  sends 'A',  '\0', '\0', '\0' and returns 0 (reading stops after first '\0')
-    uint16_t                            // Returns updated remaining length
-    SendString4(
-        const char *s,                  // Characters to send, '\0' is end
-        uint16_t len)                   // Max number of chars including '\0'
+    // The return value is the number of bytes that was sent to the EVE,
+    // which may be more than the requested length.
+    uint16_t                            // Returns number of bytes sent
+    SendData(
+        const uint8_t *data,            // Data buffer to send
+        uint16_t len)                   // Buffer length
     {
-        // The for-loop sends 4 bytes regardless of the input.
-        for (unsigned i = 0; i < 4; i++)
+        uint16_t result = 0;
+
+        const uint8_t *p = data;
+        while (len)
         {
-            // The next character to send is a nul byte by default.
-            char c = '\0';
-
-            // Read a byte if allowed (if not allowed, the nul byte is sent)
-            if (len)
+            // Send in blocks of 4
+            for (unsigned i = 0; i < 4; i++)
             {
-                c = *s++;
+                uint8_t c = 0;
 
-                // If the byte in our RAM was a nul terminator, don't read
-                // anymore bytes after the current one. It's okay to send
-                // this one of course.
-                if (!c)
+                // If we've reached the end, send 0. Otherwise, get the
+                // next byte
+                if (len)
                 {
-                    len = 0;
-                }
-                else
-                {
+                    c = *p++;
                     len--;
                 }
+
+                Send8(c);
             }
 
-            DBG_TRAFFIC("SendString %u\n", c);
-
-            Send8((uint8_t)(c));
+            // We just sent 4 bytes
+            result += 4;
         }
 
-        return len;
+        return result;
+    }
+
+protected:
+    //-----------------------------------------------------------------------
+    // Send a string as part of a co-processor command
+    //
+    // The function reads a string from RAM, and transfers it to the EVE
+    // It stops either when it finds the end of the source string, or when
+    // it has transferred the requested length minus one. Then it sends
+    // a nul terminator byte followed by however many bytes it takes to make
+    // the total number of transmitted bytes a multiple of 4.
+    //
+    // The return value is the number of bytes that was sent to the EVE,
+    // which may be longer than the string length.
+    //
+    // The maximum length parameter includes the nul terminator. If 0 is
+    // used, the function sends the entire string until it encounters the
+    // terminating \0.
+    uint16_t                            // Returns number of bytes sent
+    SendString(
+        const char *message,            // Characters to send, '\0' is end
+        uint16_t maxlen)                // Max input length including \0
+    {
+        uint16_t result = 0;
+
+        // Initialize the remaining length
+        uint16_t len = maxlen; // Underflows for input value 0
+        if ((!len) || (len > 256)) // Max 256 bytes supported
+        {
+            len = 256;
+        }
+
+        const char *s = message;
+
+        // NOTE: The outer loop shouldn't have a conditional expression.
+        // The remaining length is checked at the end of the outer loop
+        // so that at least 4 bytes are sent, even if the string is empty.
+        for(;;)
+        {
+            // Send 4 bytes regardless of the input.
+            for (unsigned i = 0; i < 4; i++)
+            {
+                char c = '\0';
+
+                // Read a byte if allowed (if not allowed, the nul byte is sent)
+                if (len)
+                {
+                    c = *s++;
+
+                    // If the byte in our RAM was a terminator, don't read
+                    // any more bytes after the current one. It's okay to
+                    // send this one of course.
+                    if (!c)
+                    {
+                        len = 0;
+                    }
+                    else
+                    {
+                        len--;
+                    }
+                }
+
+                DBG_TRAFFIC("SendString 0x%02X\n", (uint8_t)c);
+
+                Send8((uint8_t)(c));
+            }
+
+            // We just sent 4 characters regardless of the input
+            result += 4;
+
+            // If there's nothing left to process (we reached end of string
+            // or the maximum length), break out.
+            if (!len)
+            {
+                break;
+            }
+        }
+
+        return result;
+    }
+
+protected:
+    //-----------------------------------------------------------------------
+    // Send a string from program memory
+    //
+    // Same as for RAM strings, but the string parameter is for strings
+    // stored in program memory. This takes some extra processing for some
+    // Arduinos; use the F() macro to pass a literal string or program
+    // memory string.
+    uint16_t                            // Returns number of bytes sent
+    SendStringF(
+        const __FlashStringHelper *message, // Characters to send, '\0' is end
+        uint16_t maxlen)                // Max input length including \0
+    {
+        char buf[256];
+
+        if ((!maxlen) || (maxlen > sizeof(buf)))
+        {
+            maxlen = sizeof(buf);
+        }
+
+        // NOTE: because of the way we process the string when we send it
+        // to the EVE, there is no need to make sure that the string is
+        // nul-terminated after the copy below.
+        strncpy_P(buf, (const char *)message, maxlen);
+
+        return SendString(buf, maxlen);
     }
 
 protected:
@@ -1310,7 +1476,7 @@ protected:
     // next location. Normally it's not necessary to do anything with the
     // return value.
     uint16_t                            // Returns Cmd index after increment
-    CmdKeepSelected(
+    CmdSelect(
         uint32_t command)               // Command to queue
     {
         DBG_GEEK("cmd(%08X)\n", command);
@@ -1326,107 +1492,22 @@ protected:
 protected:
     //-----------------------------------------------------------------------
     // Store a co-processor command with no parameters
-    //
-    // The class keeps track of the current location and updates it to the
-    // next location. Normally it's not necessary to do anything with the
-    // return value.
     uint16_t                            // Returns Cmd index after increment
     Cmd(
         uint32_t command)               // Command to queue
     {
-        uint16_t result = CmdKeepSelected(command);
+        uint16_t result = CmdSelect(command);
 
         Select(false);
 
         return result;
     }
 
-protected:
-    //-----------------------------------------------------------------------
-    // Store a co-processor command with one parameter
-    //
-    // The class keeps track of the current location and updates it to the
-    // next location. Normally it's not necessary to do anything with the
-    // return value.
-    uint16_t                            // Returns Cmd index after increment
-    Cmd(
-        uint32_t command,               // Command to queue
-        uint32_t data0)                 // First parameter
-    {
-        DBG_TRAFFIC("cmd(%08X, %08X)\n", command, data0);
-
-        SelectAndAddress(RAM_CMD + _cmd_index, WRITE);
-
-        // Send the command
-        Send32(command);
-        Send32(data0);
-
-        Select(false);
-
-        return BumpCmdIndex(8);
-    }
-
-protected:
-    //-----------------------------------------------------------------------
-    // Store a co-processor command with two parameters
-    //
-    // The class keeps track of the current location and updates it to the
-    // next location. Normally it's not necessary to do anything with the
-    // return value.
-    uint16_t                            // Returns Cmd index after increment
-    Cmd(
-        uint32_t command,               // Command to queue
-        uint32_t data0,                 // First parameter
-        uint32_t data1)                 // Second parameter
-    {
-        DBG_TRAFFIC("cmd(%08X, %08X, %08X)\n", command, data0, data1);
-
-        SelectAndAddress(RAM_CMD + _cmd_index, WRITE);
-
-        // Send the command
-        Send32(command);
-        Send32(data0);
-        Send32(data1);
-
-        Select(false);
-
-        return BumpCmdIndex(12);
-    }
-
-protected:
-    //-----------------------------------------------------------------------
-    // Store a co-processor command with three parameters
-    //
-    // The class keeps track of the current location and updates it to the
-    // next location. Normally it's not necessary to do anything with the
-    // return value.
-    uint16_t                            // Returns Cmd index after increment
-    Cmd(
-        uint32_t command,               // Command to queue
-        uint32_t data0,                 // First parameter
-        uint32_t data1,                 // Second parameter
-        uint32_t data2)                 // Third parameter
-    {
-        DBG_TRAFFIC("cmd(%08X, %08X, %08X, %08X)\n", command, data0, data1, data2);
-
-        SelectAndAddress(RAM_CMD + _cmd_index, WRITE);
-
-        // Send the command
-        Send32(command);
-        Send32(data0);
-        Send32(data1);
-        Send32(data2);
-
-        Select(false);
-
-        return BumpCmdIndex(16);
-    }
-
 public:
     //-----------------------------------------------------------------------
-    // Wait until the graphics engine has caught up.
+    // Wait until the co-processor has caught up.
     //
-    // This can also be used to wait for the end of a frame, and to retrieve
+    // This can be used to wait for the end of a frame, and to retrieve
     // the location where the next command will be stored without storing
     // another command first.
     uint16_t                            // Returns Cmd index
@@ -1441,7 +1522,7 @@ public:
 
 public:
     //-----------------------------------------------------------------------
-    // Tell the graphic engine to start executing commands
+    // Tell the co-processor to start executing commands
     //
     // This updates the write pointer on the engine to the current write
     // location so that the coprocessor starts executing commands in the
@@ -1472,15 +1553,14 @@ protected:
 
         CmdWaitComplete();
 
-        Cmd(ENC_CMD_GETPTR, 0);
+        uint16_t p; // Cmd index of output stored here
+        cmd_GETPTR(&p);
 
+        // Execute the command
         CmdExecute(true);
 
-        BumpCmdIndex(-4);
-
-        result = REG_Read_32(_cmd_index);
-
-        BumpCmdIndex(4);
+        // Retrieve the result
+        result = CmdRead32(p);
 
         DBG_TRAFFIC("RAM_G first free byte is at %08X\n", result);
 
@@ -1546,27 +1626,18 @@ public:
         return cmd_COLOR_A(alpha);
     }
 
-    /////////////////////////////////////////////////////////////////////////
-    // CO-PROCESSOR SPECIFIC COMMANDS
-    /////////////////////////////////////////////////////////////////////////
-
-public:
-    //-----------------------------------------------------------------------
-    // Command: Make co-processor start a new display list
-    uint16_t                            // Returns updated Cmd index
-    CmdDlStart()
-    {
-        return Cmd(ENC_CMD_DLSTART);
-    }
-
 public:
     /////////////////////////////////////////////////////////////////////////
     // COMMAND ENCODING
     /////////////////////////////////////////////////////////////////////////
 
-    // Following macro is used to encodes a field in a uint32_t.
+    //-----------------------------------------------------------------------
+    // Macro to encodes a bit field in a uint32_t.
     //
-    // The Programmer's Guide chapter 4 shows the fields with the leftmost
+    // This is used to encode the fields in the display list commands in
+    // ProgGuide chapter 4.
+    //
+    // The Programmer's Guide shows the fields with the leftmost
     // and rightmost bit numbers, so it makes sense to use the left and
     // right bit numbers of the fields for the encoding expression.
     //
@@ -1604,15 +1675,16 @@ public:
     // to code that's basically equivalent to (value & constant) << constant.
     #define N(value, leftbit, rightbit) ((((uint32_t)value) & ((1 << (((leftbit) - (rightbit)) + 1)) - 1)) << rightbit)
 
-    // Functions to encode display list commands
+    //-----------------------------------------------------------------------
+    // Functions for Display List commands
     //
-    // The results of these functions can be added to the display list, or
-    // can be processed by the co-processor.
-    //
-    // These have names in upper case to be consistent with the macros for
-    // co-processor commands, and with code in other FT81X libraries. This
-    // makes the names somewhat inconsistent, but it makes code easier to
-    // port.
+    // A single invocation of the macro generates:
+    // * A function (starting with ENC_...) to encode the bit fields into a
+    //   uint32_t value
+    // * A function (starting with dl_...) to add an encoded command to the
+    //   display list
+    // * A function (starting with cmd_...) to add an encoded command to the
+    //   command list for the co-processor.
     //
     // Note: The names of the non-enum parameters include the actual number
     // of bits that are used, as a reminder. Keep in mind that some
@@ -1672,77 +1744,95 @@ public:
     ENC(VERTEX_FORMAT,     (uint8_t  frac3),                                                                            (frac3),                                    N(frac3,     2,  0)                                                                                  ) // ProgGuide 4.49 p.147
     ENC(VERTEX_TRANSLATE_X,(uint32_t x17),                                                                              (x17),                                      N(x17,      16,  0)                                                                                  ) // ProgGuide 4.50 p.148
     ENC(VERTEX_TRANSLATE_Y,(uint32_t y17),                                                                              (y17),                                      N(y17,      16,  0)                                                                                  ) // ProgGuide 4.51 p.149
+    #undef ENC
     #undef N
 
-    // Graphics co-processor commands
-    const uint32_t ENC_CMD_APPEND              = 0xFFFFFF1EUL;
-    const uint32_t ENC_CMD_BGCOLOR             = 0xFFFFFF09UL;
-    const uint32_t ENC_CMD_BITMAP_TRANSFORM    = 0xFFFFFF21UL;
-    const uint32_t ENC_CMD_BUTTON              = 0xFFFFFF0DUL;
-    const uint32_t ENC_CMD_CALIBRATE           = 0xFFFFFF15UL;
-    const uint32_t ENC_CMD_CLOCK               = 0xFFFFFF14UL;
-    const uint32_t ENC_CMD_COLDSTART           = 0xFFFFFF32UL;
-    const uint32_t ENC_CMD_CRC                 = 0xFFFFFF03UL;
-    const uint32_t ENC_CMD_CSKETCH             = 0xFFFFFF35UL;
-    const uint32_t ENC_CMD_DIAL                = 0xFFFFFF2DUL;
-    const uint32_t ENC_CMD_DLSTART             = 0xFFFFFF00UL;
-    const uint32_t ENC_CMD_EXECUTE             = 0xFFFFFF07UL;
-    const uint32_t ENC_CMD_FGCOLOR             = 0xFFFFFF0AUL;
-    const uint32_t ENC_CMD_GAUGE               = 0xFFFFFF13UL;
-    const uint32_t ENC_CMD_GETMATRIX           = 0xFFFFFF33UL;
-    const uint32_t ENC_CMD_GETPOINT            = 0xFFFFFF08UL;
-    const uint32_t ENC_CMD_GETPROPS            = 0xFFFFFF25UL;
-    const uint32_t ENC_CMD_GETPTR              = 0xFFFFFF23UL;
-    const uint32_t ENC_CMD_GRADCOLOR           = 0xFFFFFF34UL;
-    const uint32_t ENC_CMD_GRADIENT            = 0xFFFFFF0BUL;
-    const uint32_t ENC_CMD_HAMMERAUX           = 0xFFFFFF04UL;
-    const uint32_t ENC_CMD_IDCT_DELETED        = 0xFFFFFF06UL;
-    const uint32_t ENC_CMD_INFLATE             = 0xFFFFFF22UL;
-    const uint32_t ENC_CMD_INT_RAMSHARED       = 0xFFFFFF3DUL;
-    const uint32_t ENC_CMD_INT_SWLOADIMAGE     = 0xFFFFFF3EUL;
-    const uint32_t ENC_CMD_INTERRUPT           = 0xFFFFFF02UL;
-    const uint32_t ENC_CMD_KEYS                = 0xFFFFFF0EUL;
-    const uint32_t ENC_CMD_LOADIDENTITY        = 0xFFFFFF26UL;
-    const uint32_t ENC_CMD_LOADIMAGE           = 0xFFFFFF24UL;
-    const uint32_t ENC_CMD_LOGO                = 0xFFFFFF31UL;
-    const uint32_t ENC_CMD_MARCH               = 0xFFFFFF05UL;
-    const uint32_t ENC_CMD_MEDIAFIFO           = 0xFFFFFF39UL;
-    const uint32_t ENC_CMD_MEMCPY              = 0xFFFFFF1DUL;
-    const uint32_t ENC_CMD_MEMCRC              = 0xFFFFFF18UL;
-    const uint32_t ENC_CMD_MEMSET              = 0xFFFFFF1BUL;
-    const uint32_t ENC_CMD_MEMWRITE            = 0xFFFFFF1AUL;
-    const uint32_t ENC_CMD_MEMZERO             = 0xFFFFFF1CUL;
-    const uint32_t ENC_CMD_NUMBER              = 0xFFFFFF2EUL;
-    const uint32_t ENC_CMD_PLAYVIDEO           = 0xFFFFFF3AUL;
-    const uint32_t ENC_CMD_PROGRESS            = 0xFFFFFF0FUL;
-    const uint32_t ENC_CMD_REGREAD             = 0xFFFFFF19UL;
-    const uint32_t ENC_CMD_ROMFONT             = 0xFFFFFF3FUL;
-    const uint32_t ENC_CMD_ROTATE              = 0xFFFFFF29UL;
-    const uint32_t ENC_CMD_SCALE               = 0xFFFFFF28UL;
-    const uint32_t ENC_CMD_SCREENSAVER         = 0xFFFFFF2FUL;
-    const uint32_t ENC_CMD_SCROLLBAR           = 0xFFFFFF11UL;
-    const uint32_t ENC_CMD_SETBASE             = 0xFFFFFF38UL;
-    const uint32_t ENC_CMD_SETBITMAP           = 0xFFFFFF43UL;
-    const uint32_t ENC_CMD_SETFONT             = 0xFFFFFF2BUL;
-    const uint32_t ENC_CMD_SETFONT2            = 0xFFFFFF3BUL;
-    const uint32_t ENC_CMD_SETMATRIX           = 0xFFFFFF2AUL;
-    const uint32_t ENC_CMD_SETROTATE           = 0xFFFFFF36UL;
-    const uint32_t ENC_CMD_SETSCRATCH          = 0xFFFFFF3CUL;
-    const uint32_t ENC_CMD_SKETCH              = 0xFFFFFF30UL;
-    const uint32_t ENC_CMD_SLIDER              = 0xFFFFFF10UL;
-    const uint32_t ENC_CMD_SNAPSHOT            = 0xFFFFFF1FUL;
-    const uint32_t ENC_CMD_SNAPSHOT2           = 0xFFFFFF37UL;
-    const uint32_t ENC_CMD_SPINNER             = 0xFFFFFF16UL;
-    const uint32_t ENC_CMD_STOP                = 0xFFFFFF17UL;
-    const uint32_t ENC_CMD_SWAP                = 0xFFFFFF01UL;
-    const uint32_t ENC_CMD_SYNC                = 0xFFFFFF42UL;
-    const uint32_t ENC_CMD_TEXT                = 0xFFFFFF0CUL;
-    const uint32_t ENC_CMD_TOGGLE              = 0xFFFFFF12UL;
-    const uint32_t ENC_CMD_TOUCH_TRANSFORM     = 0xFFFFFF20UL;
-    const uint32_t ENC_CMD_TRACK               = 0xFFFFFF2CUL;
-    const uint32_t ENC_CMD_TRANSLATE           = 0xFFFFFF27UL;
-    const uint32_t ENC_CMD_VIDEOFRAME          = 0xFFFFFF41UL;
-    const uint32_t ENC_CMD_VIDEOSTART          = 0xFFFFFF40UL;
+    //-----------------------------------------------------------------------
+    // Graphics coprocessor commands
+    //
+    // Co-processor commands are encoded as bytes (not bits) so they can't
+    // be encoded the same way as display list commands.
+    //
+    // The following macros are used to generate functions that start with
+    // cmd_ and send the given command and parameters to the co-processor.
+    //
+    // 2 byte input value
+    #define V2(value) (Send16((uint16_t)(value)), result += 2)
+    // 4 byte input value
+    #define V4(value) (Send32((uint32_t)(value)), result += 4)
+    // String value
+    #define SS(value, maxlen) (result += SendString(value, maxlen))
+    // Program memory string value
+    #define SF(value, maxlen) (result += SendStringF(value, maxlen))
+    // Transfer from host RAM
+    #define MM(value, len) (result += SendData(value, len))
+    // 4 byte output value: Store Cmd index to parameter and bump cmd index
+    #define Q4(name) ((*name = _cmd_index + (result % RAM_CMD_SIZE)), V4(0))
+    // Send command and data, keep EVE selected
+    #define CMDSEL(name, declaration, value) \
+        uint16_t cmd_##name declaration { CmdSelect(ENC_CMD_##name); int16_t result = 0; return BumpCmdIndex(value); }
+    // Send command and de-select
+    #define CMD(name, declaration, value) \
+        uint16_t cmd_##name declaration { CmdSelect(ENC_CMD_##name); int16_t result = 0; BumpCmdIndex(value); Select(false); return result; }
+    // Send command that has outputs (To be changed later)
+    #define CMDOUT CMDSEL
+    CMD(DLSTART,        (),                                                                                                                             (0                                                                                  )) // ProgGuide 5.11 p.162
+    CMD(SWAP,           (),                                                                                                                             (0                                                                                  )) // ProgGuide 5.12 p.163
+    CMD(COLDSTART,      (),                                                                                                                             (0                                                                                  )) // ProgGuide 5.13 p.163
+    CMD(INTERRUPT,      (uint32_t ms32),                                                                                                                (V4(ms32)                                                                           )) // ProgGuide 5.14 p.164
+    CMD(APPEND,         (uint32_t ptr32, uint32_t num32),                                                                                               (V4(ptr32),V4(num32)                                                                )) // ProgGuide 5.15 p.165
+    CMD(REGREAD,        (uint32_t ptr32, uint32_t result32),                                                                                            (V4(ptr32),V4(result32)                                                             )) // ProgGuide 5.16 p.166
+    CMD(MEMWRITE,       (uint32_t ptr32, uint32_t num, const uint8_t *data),                                                                            (V4(ptr32),V4(num),MM(data, num)                                                    )) // ProgGuide 5.17 p.167
+    CMDSEL(INFLATE,     (uint32_t ptr32, uint32_t num, const uint8_t *data),                                                                            (V4(ptr32),MM(data, num)                                                            )) // ProgGuide 5.18 p.168
+    CMDSEL(LOADIMAGE,   (uint32_t ptr32, OPT options32, uint32_t num, const uint8_t *data),                                                             (V4(ptr32),V4(options32),MM(data, num)                                              )) // ProgGuide 5.19 p.169
+    CMD(MEDIAFIFO,      (uint32_t ptr32, uint32_t size32),                                                                                              (V4(ptr32),V4(size32)                                                               )) // ProgGuide 5.20 p.170
+    CMD(PLAYVIDEO,      (OPT options),                                                                                                                  (V4(options)                                                                        )) // ProgGuide 5.21 p.171
+    CMD(VIDEOSTART,     (),                                                                                                                             (0                                                                                  )) // ProgGuide 5.22 p.172
+    CMD(VIDEOFRAME,     (uint32_t dst32, uint32_t ptr32),                                                                                               (V4(dst32),V4(ptr32)                                                                )) // ProgGuide 5.23 p.173
+    CMDOUT(MEMCRC,      (uint32_t ptr32, uint32_t num32, uint16_t *xresult32),                                                                          (V4(ptr32),V4(num32),Q4(xresult32)                                                  )) // ProgGuide 5.24 p.173
+    CMD(MEMZERO,        (uint32_t ptr32, uint32_t num32),                                                                                               (V4(ptr32),V4(num32)                                                                )) // ProgGuide 5.25 p.174
+    CMD(MEMSET,         (uint32_t ptr32, uint32_t value8, uint32_t num32),                                                                              (V4(ptr32),V4(value8),V4(num32)                                                     )) // ProgGuide 5.26 p.175
+    CMD(MEMCPY,         (uint32_t dest32, uint32_t src32, uint32_t num32),                                                                              (V4(dest32),V4(src32),V4(num32)                                                     )) // ProgGuide 5.27 p.176
+    CMD(BUTTON,         (int16_t x16, int16_t y16, int16_t w16, int16_t h16, int16_t font5, OPT options, const char *message, uint16_t len = 0),        (V2(x16),V2(y16),V2(w16),V2(h16),V2(font5),V2(options),SS(message, len)             )) // ProgGuide 5.28 p.176
+    CMD(CLOCK,          (int16_t x16, int16_t y16, int16_t r16, OPT options, uint16_t h16, uint16_t m16, uint16_t s16, uint16_t ms16),                  (V2(x16),V2(y16),V2(r16),V2(options),V2(h16),V2(m16),V2(s16),V2(ms16)               )) // ProgGuide 5.29 p.179
+    CMD(FGCOLOR,        (uint32_t c24),                                                                                                                 (V4(c24)                                                                            )) // ProgGuide 5.30 p.183
+    CMD(BGCOLOR,        (uint32_t c24),                                                                                                                 (V4(c24)                                                                            )) // ProgGuide 5.31 p.184
+    CMD(GRADCOLOR,      (uint32_t c24),                                                                                                                 (V4(c24)                                                                            )) // ProgGuide 5.32 p.185
+    CMD(GAUGE,          (int16_t x16, int16_t y16, int16_t r16, OPT options, uint16_t major16, uint16_t minor16, uint16_t val16, uint16_t range16),     (V2(x16),V2(y16),V2(r16),V2(options),V2(major16),V2(minor16),V2(val16),V2(range16)  )) // ProgGuide 5.33 p.187
+    CMD(GRADIENT,       (int16_t x016, int16_t y016, uint32_t rgb024, int16_t x116, int16_t y116, int32_t rgb124),                                      (V2(x016),V2(y016),V4(rgb024),V2(x116),V2(y116),V4(rgb124)                          )) // ProgGuide 5.34 p.193
+    CMD(KEYS,           (int16_t x16, int16_t y16, int16_t w16, int16_t h16, int16_t font5, OPT options, const char *message, uint16_t len = 0),        (V2(x16),V2(y16),V2(w16),V2(h16),V2(options),SS(message, len)                       )) // ProgGuide 5.35 p.196
+    CMD(PROGRESS,       (int16_t x16, int16_t y16, int16_t w16, int16_t h16, OPT options, uint16_t val16, uint16_t range16),                            (V2(x16),V2(y16),V2(w16),V2(h16),V2(options),V2(val16),V2(range16),V2(0)            )) // ProgGuide 5.36 p.200
+    CMD(SCROLLBAR,      (int16_t x16, int16_t y16, int16_t w16, int16_t h16, OPT options, uint16_t val16, uint16_t size16, uint16_t range16),           (V2(x16),V2(y16),V2(w16),V2(h16),V2(options),V2(val16),V2(size16),V2(range16)       )) // ProgGuide 5.37 p.201
+    CMD(SLIDER,         (int16_t x16, int16_t y16, int16_t w16, int16_t h16, OPT options, uint16_t val16, uint16_t range16),                            (V2(x16),V2(y16),V2(w16),V2(h16),V2(options),V2(val16),V2(range16),V2(0)            )) // ProgGuide 5.38 p.205
+    CMD(DIAL,           (int16_t x16, int16_t y16, int16_t r16, OPT options, uint16_t val16),                                                           (V2(x16),V2(y16),V2(r16),V2(options),V2(val16),V2(0)                                )) // ProgGuide 5.39 p.207
+    CMD(TOGGLE,         (int16_t x16, int16_t y16, int16_t w16, uint16_t font5, OPT options, uint16_t state16, const char *message, uint16_t len = 0),  (V2(x16),V2(y16),V2(w16),V2(font5),V2(options),V2(state16),SS(message, len)         )) // ProgGuide 5.40 p.210
+    CMD(TEXT,           (int16_t x16, int16_t y16, int16_t font5, OPT options, const char *message, uint16_t len = 0),                                  (V2(x16),V2(y16),V2(font5),V2(options),SS(message, len)                             )) // ProgGuide 5.41 p.213
+    CMD(SETBASE,        (uint32_t b6),                                                                                                                  (V4(b6)                                                                             )) // ProgGuide 5.42 p.216
+    CMD(NUMBER,         (int16_t x16, uint16_t y16, int16_t font5, OPT options, int32_t n32),                                                           (V2(x16),V2(y16),V2(font5),V2(options),V4(n32)                                      )) // ProgGuide 5.43 p.217
+    CMD(LOADIDENTITY,   (),                                                                                                                             (0                                                                                  )) // ProgGuide 5.44 p.220
+    CMD(SETMATRIX,      (),                                                                                                                             (0                                                                                  )) // ProgGuide 5.45 p.220
+    CMDOUT(GETMATRIX,   (uint16_t *xa32, uint16_t *xb32, uint16_t *xc32, uint16_t *xd32, int16_t *xe32, int16_t *xf32),                                 (Q4(xa32),Q4(xb32),Q4(xc32),Q4(xd32),Q4(xe32),Q4(xf32)                              )) // ProgGuide 5.46 p.221
+    CMDOUT(GETPTR,      (uint16_t *xptr),                                                                                                               (Q4(xptr)                                                                           )) // ProgGuide 5.47 p.222
+    CMDOUT(GETPROPS,    (uint16_t *xptr32, uint16_t *xwidth32, uint16_t *xheight32),                                                                    (Q4(xptr32),Q4(xwidth32),Q4(xheight32)                                              )) // ProgGuide 5.48 p.223
+    CMD(SCALE,          (int32_t sx32, int32_t sy32),                                                                                                   (V4(sx32),V4(sy32)                                                                  )) // ProgGuide 5.49 p.223
+    CMD(ROTATE,         (int32_t a32),                                                                                                                  (V4(a32)                                                                            )) // ProgGuide 5.50 p.225
+    CMD(TRANSLATE,      (int32_t tx32, int32_t ty32),                                                                                                   (V4(tx32),V4(ty32)                                                                  )) // ProgGuide 5.51 p.226
+    CMDOUT(CALIBRATE,   (uint16_t *xresult32),                                                                                                          (Q4(xresult32)                                                                      )) // ProgGuide 5.52 p.227
+    CMD(SETROTATE,      (uint32_t r32),                                                                                                                 (V4(r32)                                                                            )) // ProgGuide 5.53 p.228
+    CMD(SPINNER,        (int16_t x16, int16_t y16, uint16_t style2, uint16_t scale2),                                                                   (V2(x16),V2(y16),V2(style2),V2(scale2)                                              )) // ProgGuide 5.54 p.229
+    CMD(SCREENSAVER,    (),                                                                                                                             (0                                                                                  )) // ProgGuide 5.55 p.233
+    CMD(SKETCH,         (int16_t x16, int16_t y16, uint16_t w16, uint16_t h16, uint32_t ptr32, FORMAT format),                                          (V2(x16),V2(y16),V2(w16),V2(h16),V4(ptr32),V2(format),V2(0)                         )) // ProgGuide 5.55 p.234
+    CMD(STOP,           (),                                                                                                                             (0                                                                                  )) // ProgGuide 5.57 p.236
+    CMD(SETFONT,        (uint32_t font5, uint32_t ptr32),                                                                                               (V4(font5),V4(ptr32)                                                                )) // ProgGuide 5.58 p.237
+    CMD(SETFONT2,       (uint32_t font5, uint32_t ptr32, uint32_t firstchar8),                                                                          (V4(font5),V4(ptr32),V4(firstchar8)                                                 )) // ProgGuide 5.59 p.237
+    CMD(SETSCRATCH,     (uint32_t handle5),                                                                                                             (V4(handle5)                                                                        )) // ProgGuide 5.60 p.239
+    CMD(ROMFONT,        (uint32_t font5, uint32_t romslot6),                                                                                            (V4(font5),V4(romslot6)                                                             )) // ProgGuide 5.61 p.240
+    CMD(TRACK,          (int16_t x16, int16_t y16, int16_t w16, int16_t h16, int16_t tag8),                                                             (V2(x16),V2(y16),V2(w16),V2(h16),V2(tag8),V2(0)                                     )) // ProgGuide 5.62 p.240
+    CMD(SNAPSHOT,       (uint32_t ptr32),                                                                                                               (V4(ptr32)                                                                          )) // ProgGuide 5.63 p.245
+    CMD(SNAPSHOT2,      (FORMAT format, uint32_t ptr32, int16_t x16, int16_t y16, int16_t w16, int16_t h16),                                            (V4(format),V4(ptr32),V2(x16),V2(y16),V2(w16),V2(h16)                               )) // ProgGuide 5.64 p.246
+    CMD(SETBITMAP,      (uint32_t addr32, FORMAT format, uint16_t width16, uint16_t height16),                                                          (V4(addr32),V2(format),V2(width16),V2(height16),V2(0)                               )) // ProgGuide 5.65 p.247
+    CMD(LOGO,           (),                                                                                                                             (0                                                                                  )) // ProgGuide 5.66 p.249
+    CMD(CSKETCH,        (int16_t x16, int16_t y16, uint16_t w16, uint16_t h16, uint32_t ptr32, FORMAT format, uint16_t freq16),                         (V2(x16),V2(y16),V2(w16),V2(h16),V4(ptr32),V2(format),V2(freq16)                    )) // ProgGuide 5.67 p.249
 
     /////////////////////////////////////////////////////////////////////////
     // CO-PROCESSOR HELPER FUNCTIONS
@@ -1884,110 +1974,4 @@ public:
         return _cmd_index;
     }
 
-public:
-    //-----------------------------------------------------------------------
-    // Print text from a RAM string.
-    //
-    // By default, the coordinates are the top left pixel of the text.
-    //
-    // Allowed options are:
-    // * OPT_CENTERX    Center text horizontally
-    // * OPT_CENTERY    Center text vertically
-    // * OPT_CENTER     Center text in both directions
-    // * OPT_RIGHTX     Right-justify text so that x is the rightmost pixel
-    uint16_t                            // Returns updated Cmd index
-    cmd_Text(
-        uint16_t x,                     // X coordinate
-        uint16_t y,                     // Y coordinate
-        uint16_t font5,                 // Font ID
-        OPT options,                    // Options (flags)
-        const char *message,            // Message string
-        uint16_t maxlen = 0)            // Optional maximum length (0=no max)
-    {
-        // Send the TEXT command and keep the EVE selected
-        CmdKeepSelected(EVE_ENC_CMD_TEXT);
-
-        DBG_TRAFFIC("x=%u y=%u font=%u options=0x%X message=\"%s\" maxlen=%u\n",
-            x, y, font5, options, message, maxlen);
-
-        Send16(x);
-        Send16(y);
-        Send16(font5);
-        Send16(options);
-
-        // Initialize the remaining length.
-        // If the requested maximum length is 0 or too much, change it.
-        uint16_t len = maxlen;
-        if ((len == 0) || (len > 256))
-        {
-            len = 256;
-        }
-
-        // Send out the string in 4 byte chunks
-        // Note: We should call the chunk sending function at least once,
-        // so don't check for the end of the string in the "for" condition.
-        const char *s = message;
-        int16_t totalsent = 8; // Keep track of total sent bytes after cmd
-        for(;;)
-        {
-            len = SendString4(s, len);
-
-            // The string chunk function always sends 4 bytes and always
-            // sends a nul terminator even if the input string doesn't end
-            // in a '\0' character.
-            totalsent += 4;
-
-            // If there's nothing left to process (we reached end of string
-            // or the maximum length), break out.
-            if (!len)
-            {
-                break;
-            }
-
-            // Prepare for the next chunk.
-            s += 4;
-        }
-
-        // De-select the EVE
-        Select(false);
-
-        return BumpCmdIndex(totalsent);
-    }
-
-public:
-    //-----------------------------------------------------------------------
-    // Print a string from ROM
-    //
-    // This copies the string to a RAM buffer first and then prints it.
-    //
-    // By default, the coordinates are the top left pixel of the text.
-    //
-    // Allowed options are:
-    // * OPT_CENTERX    Center text horizontally
-    // * OPT_CENTERY    Center text vertically
-    // * OPT_CENTER     Center text in both directions
-    // * OPT_RIGHTX     Right-justify text so that x is the rightmost pixel
-    uint16_t                            // Returns updated Cmd index
-    cmd_TextF(
-        uint16_t x,                     // X coordinate
-        uint16_t y,                     // Y coordinate
-        uint16_t font5,                 // Font ID
-        OPT options,                    // Options (flags)
-        const __FlashStringHelper *message, // Message string
-        uint16_t maxlen = 0)            // Optional maximum length (0=no max)
-    {
-        char buf[256];
-
-        if ((!maxlen) || (maxlen > sizeof(buf)))
-        {
-            maxlen = sizeof(buf);
-        }
-
-        // NOTE: because of the way we process the string when we send it
-        // to the EVE, there is no need to make sure that the string is
-        // nul-terminated after the copy below.
-        strncpy_P(buf, (const char *)message, maxlen);
-
-        return cmd_Text(x, y, font5, options, buf, maxlen);
-    }
 };
