@@ -224,6 +224,10 @@ void setup()
     bounceDemo.Init();
 
     DBG_STAT("End Setup\n");
+
+    steve.CmdStartSpinner(steve.RGB(0, 0, 0), steve.RGB(255, 255, 255), steve.RGB(255, 0, 255), F("STEVE!"));
+    delay(5000);
+    steve.CmdStopSpinner(steve.RGB(255, 255, 255), steve.RGB(255, 255, 255), F("BOB"));
 }
 
 void loop()

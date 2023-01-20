@@ -15,7 +15,7 @@ display size.
 #include <SPI.h>
 
 // Uncomment this to show detailed data about what the code does
-#define DBG_TRAFFIC(...) //DBG_GEEK(__VA_ARGS__)
+#define DBG_TRAFFIC(...) DBG_STAT(__VA_ARGS__)
 
 #ifndef STRINGIZE
 #define _STRINGIZE(x) #x
@@ -24,6 +24,18 @@ display size.
 
 class StEVE
 {
+public:
+    const static uint32_t MaxStringSize         = 256;
+
+public:
+    //-----------------------------------------------------------------------
+    // Convert RGB values to an RGB24 value
+    uint32_t                            // Returns 24-bit RGB value
+    static RGB(uint8_t r, uint8_t g, uint8_t b)
+    {
+        return (uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b;
+    }
+
 public:
     //-----------------------------------------------------------------------
     // Class to keep track of an index into the RAM area of the EVE chip
@@ -126,121 +138,128 @@ public:
     typedef Index<RAM_CMD_SIZE> CmdIndex;
     typedef Index<RAM_DL_SIZE> DLIndex;
 
-    // Registers, see datasheet section 5.1 p.40
-    const static uint32_t REG_ANA_COMP          = 0x00302184UL;
-    const static uint32_t REG_ANALOG            = 0x0030216CUL;
-    const static uint32_t REG_BIST_EN           = 0x00302174UL;
-    const static uint32_t REG_BUSYBITS          = 0x003020E8UL;
-    const static uint32_t REG_CLOCK             = 0x00302008UL;
-    const static uint32_t REG_CMD_DL            = 0x00302100UL;
-    const static uint32_t REG_CMD_READ          = 0x003020F8UL;
-    const static uint32_t REG_CMD_WRITE         = 0x003020FCUL;
-    const static uint32_t REG_CMDB_SPACE        = 0x00302574UL;
-    const static uint32_t REG_CMDB_WRITE        = 0x00302578UL;
-    const static uint32_t REG_CPURESET          = 0x00302020UL;
-    const static uint32_t REG_CRC               = 0x00302178UL;
-    const static uint32_t REG_CSPREAD           = 0x00302068UL;
-    const static uint32_t REG_CTOUCH_EXTENDED   = 0x00302108UL;
-    const static uint32_t REG_CTOUCH_TOUCH0_XY  = 0x00302124UL;
-    const static uint32_t REG_CTOUCH_TOUCH1_XY  = 0x0030211CUL;
-    const static uint32_t REG_CTOUCH_TOUCH2_XY  = 0x0030218CUL;
-    const static uint32_t REG_CTOUCH_TOUCH3_XY  = 0x00302190UL;
-    const static uint32_t REG_CTOUCH_TOUCH4_X   = 0x0030216CUL;
-    const static uint32_t REG_CTOUCH_TOUCH4_Y   = 0x00302120UL;
-    const static uint32_t REG_CYA_TOUCH         = 0x00302168UL;
-    const static uint32_t REG_DATESTAMP         = 0x00302564UL;
-    const static uint32_t REG_DITHER            = 0x00302060UL;
-    const static uint32_t REG_DLSWAP            = 0x00302054UL;
-    const static uint32_t REG_FRAMES            = 0x00302004UL;
-    const static uint32_t REG_FREQUENCY         = 0x0030200CUL;
-    const static uint32_t REG_GPIO              = 0x00302094UL;
-    const static uint32_t REG_GPIO_DIR          = 0x00302090UL;
-    const static uint32_t REG_GPIOX             = 0x0030209CUL;
-    const static uint32_t REG_GPIOX_DIR         = 0x00302098UL;
-    const static uint32_t REG_HCYCLE            = 0x0030202CUL;
-    const static uint32_t REG_HOFFSET           = 0x00302030UL;
-    const static uint32_t REG_HSIZE             = 0x00302034UL;
-    const static uint32_t REG_HSYNC0            = 0x00302038UL;
-    const static uint32_t REG_HSYNC1            = 0x0030203CUL;
-    const static uint32_t REG_ID                = 0x00302000UL;
-    const static uint32_t REG_INT_EN            = 0x003020ACUL;
-    const static uint32_t REG_INT_FLAGS         = 0x003020A8UL;
-    const static uint32_t REG_INT_MASK          = 0x003020B0UL;
-    const static uint32_t REG_MACRO_0           = 0x003020D8UL;
-    const static uint32_t REG_MACRO_1           = 0x003020DCUL;
-    const static uint32_t REG_MEDIAFIFO_READ    = 0x00309014UL;
-    const static uint32_t REG_MEDIAFIFO_WRITE   = 0x00309018UL;
-    const static uint32_t REG_OUTBITS           = 0x0030205CUL;
-    const static uint32_t REG_PATCHED_ANALOG    = 0x00302170UL;
-    const static uint32_t REG_PATCHED_TOUCH_FAUL= 0x0030216CUL;
-    const static uint32_t REG_PCLK              = 0x00302070UL;
-    const static uint32_t REG_PCLK_POL          = 0x0030206CUL;
-    const static uint32_t REG_PLAY              = 0x0030208CUL;
-    const static uint32_t REG_PLAYBACK_FORMAT   = 0x003020C4UL;
-    const static uint32_t REG_PLAYBACK_FREQ     = 0x003020C0UL;
-    const static uint32_t REG_PLAYBACK_LENGTH   = 0x003020B8UL;
-    const static uint32_t REG_PLAYBACK_LOOP     = 0x003020C8UL;
-    const static uint32_t REG_PLAYBACK_PLAY     = 0x003020CCUL;
-    const static uint32_t REG_PLAYBACK_READPTR  = 0x003020BCUL;
-    const static uint32_t REG_PLAYBACK_START    = 0x003020B4UL;
-    const static uint32_t REG_PWM_DUTY          = 0x003020D4UL;
-    const static uint32_t REG_PWM_HZ            = 0x003020D0UL;
-    const static uint32_t REG_RENDERMODE        = 0x00302010UL;
-    const static uint32_t REG_ROMSUB_SEL        = 0x003020F0UL;
-    const static uint32_t REG_ROTATE            = 0x00302058UL;
-    const static uint32_t REG_SNAPFORMAT        = 0x0030201CUL;
-    const static uint32_t REG_SNAPSHOT          = 0x00302018UL;
-    const static uint32_t REG_SNAPY             = 0x00302014UL;
-    const static uint32_t REG_SOUND             = 0x00302088UL;
-    const static uint32_t REG_SPI_EARLY_TX      = 0x0030217CUL;
-    const static uint32_t REG_SPI_WIDTH         = 0x00302188UL;
-    const static uint32_t REG_SWIZZLE           = 0x00302064UL;
-    const static uint32_t REG_TAG               = 0x0030207CUL;
-    const static uint32_t REG_TAG_X             = 0x00302074UL;
-    const static uint32_t REG_TAG_Y             = 0x00302078UL;
-    const static uint32_t REG_TAP_CRC           = 0x00302024UL;
-    const static uint32_t REG_TAP_MASK          = 0x00302028UL;
-    const static uint32_t REG_TOUCH_ADC_MODE    = 0x00302108UL;
-    const static uint32_t REG_TOUCH_CHARGE      = 0x0030210CUL;
-    const static uint32_t REG_TOUCH_DIRECT_XY   = 0x0030218CUL;
-    const static uint32_t REG_TOUCH_DIRECT_Z1Z2 = 0x00302190UL;
-    const static uint32_t REG_TOUCH_FAULT       = 0x00302170UL;
-    const static uint32_t REG_TOUCH_MODE        = 0x00302104UL;
-    const static uint32_t REG_TOUCH_OVERSAMPLE  = 0x00302114UL;
-    const static uint32_t REG_TOUCH_RAW_XY      = 0x0030211CUL;
-    const static uint32_t REG_TOUCH_RZ          = 0x00302120UL;
-    const static uint32_t REG_TOUCH_RZTHRESH    = 0x00302118UL;
-    const static uint32_t REG_TOUCH_SCREEN_XY   = 0x00302124UL;
-    const static uint32_t REG_TOUCH_SETTLE      = 0x00302110UL;
-    const static uint32_t REG_TOUCH_TAG         = 0x0030212CUL;
-    const static uint32_t REG_TOUCH_TAG_XY      = 0x00302128UL;
-    const static uint32_t REG_TOUCH_TAG1        = 0x00302134UL;
-    const static uint32_t REG_TOUCH_TAG1_XY     = 0x00302130UL;
-    const static uint32_t REG_TOUCH_TAG2        = 0x0030213CUL;
-    const static uint32_t REG_TOUCH_TAG2_XY     = 0x00302138UL;
-    const static uint32_t REG_TOUCH_TAG3        = 0x00302144UL;
-    const static uint32_t REG_TOUCH_TAG3_XY     = 0x00302140UL;
-    const static uint32_t REG_TOUCH_TAG4        = 0x0030214CUL;
-    const static uint32_t REG_TOUCH_TAG4_XY     = 0x00302148UL;
-    const static uint32_t REG_TOUCH_TRANSFORM_A = 0x00302150UL;
-    const static uint32_t REG_TOUCH_TRANSFORM_B = 0x00302154UL;
-    const static uint32_t REG_TOUCH_TRANSFORM_C = 0x00302158UL;
-    const static uint32_t REG_TOUCH_TRANSFORM_D = 0x0030215CUL;
-    const static uint32_t REG_TOUCH_TRANSFORM_E = 0x00302160UL;
-    const static uint32_t REG_TOUCH_TRANSFORM_F = 0x00302164UL;
-    const static uint32_t REG_TRACKER           = 0x00309000UL;
-    const static uint32_t REG_TRACKER_1         = 0x00309004UL;
-    const static uint32_t REG_TRACKER_2         = 0x00309008UL;
-    const static uint32_t REG_TRACKER_3         = 0x0030900CUL;
-    const static uint32_t REG_TRACKER_4         = 0x00309010UL;
-    const static uint32_t REG_TRIM              = 0x00302180UL;
-    const static uint32_t REG_VCYCLE            = 0x00302040UL;
-    const static uint32_t REG_VOFFSET           = 0x00302044UL;
-    const static uint32_t REG_VOL_PB            = 0x00302080UL;
-    const static uint32_t REG_VOL_SOUND         = 0x00302084UL;
-    const static uint32_t REG_VSIZE             = 0x00302048UL;
-    const static uint32_t REG_VSYNC0            = 0x0030204CUL;
-    const static uint32_t REG_VSYNC1            = 0x00302050UL;
+    // Registers, see datasheet section 5.1 Table 5-2 p.40
+    typedef enum
+    {
+        REG_ID                      = 0x302000,
+        REG_FRAMES                  = 0x302004,
+        REG_CLOCK                   = 0x302008,
+        REG_FREQUENCY               = 0x30200C,
+        REG_RENDERMODE              = 0x302010,
+        REG_SNAPY                   = 0x302014,
+        REG_SNAPSHOT                = 0x302018,
+        REG_SNAPFORMAT              = 0x30201C,
+        REG_CPURESET                = 0x302020,
+        REG_TAP_CRC                 = 0x302024,
+        REG_TAP_MASK                = 0x302028,
+        REG_HCYCLE                  = 0x30202C,
+        REG_HOFFSET                 = 0x302030,
+        REG_HSIZE                   = 0x302034,
+        REG_HSYNC0                  = 0x302038,
+        REG_HSYNC1                  = 0x30203C,
+        REG_VCYCLE                  = 0x302040,
+        REG_VOFFSET                 = 0x302044,
+        REG_VSIZE                   = 0x302048,
+        REG_VSYNC0                  = 0x30204C,
+        REG_VSYNC1                  = 0x302050,
+        REG_DLSWAP                  = 0x302054,
+        REG_ROTATE                  = 0x302058,
+        REG_OUTBITS                 = 0x30205C,
+        REG_DITHER                  = 0x302060,
+        REG_SWIZZLE                 = 0x302064,
+        REG_CSPREAD                 = 0x302068,
+        REG_PCLK_POL                = 0x30206C,
+        REG_PCLK                    = 0x302070,
+        REG_TAG_X                   = 0x302074,
+        REG_TAG_Y                   = 0x302078,
+        REG_TAG                     = 0x30207C,
+        REG_VOL_PB                  = 0x302080,
+        REG_VOL_SOUND               = 0x302084,
+        REG_SOUND                   = 0x302088,
+        REG_PLAY                    = 0x30208C,
+        REG_GPIO_DIR                = 0x302090,
+        REG_GPIO                    = 0x302094,
+        REG_GPIOX_DIR               = 0x302098,
+        REG_GPIOX                   = 0x30209C,
+        // 0x3020A0-0x3020A4 Reserved
+        REG_INT_FLAGS               = 0x3020A8,
+        REG_INT_EN                  = 0x3020AC,
+        REG_INT_MASK                = 0x3020B0,
+        REG_PLAYBACK_START          = 0x3020B4,
+        REG_PLAYBACK_LENGTH         = 0x3020B8,
+        REG_PLAYBACK_READPTR        = 0x3020BC,
+        REG_PLAYBACK_FREQ           = 0x3020C0,
+        REG_PLAYBACK_FORMAT         = 0x3020C4,
+        REG_PLAYBACK_LOOP           = 0x3020C8,
+        REG_PLAYBACK_PLAY           = 0x3020CC,
+        REG_PWM_HZ                  = 0x3020D0,
+        REG_PWM_DUTY                = 0x3020D4,
+        REG_MACRO_0                 = 0x3020D8,
+        REG_MACRO_1                 = 0x3020DC,
+        // 0x3020E0-0x3020F4 Reserved according to datasheet v1.2
+        REG_BUSYBITS                = 0x3020E8, // Not in datasheet v1.2
+        REG_ROMSUB_SEL              = 0x3020F0, // Not in datasheet v1.2
+        REG_CMD_READ                = 0x3020F8,
+        REG_CMD_WRITE               = 0x3020FC,
+        REG_CMD_DL                  = 0x302100,
+        REG_TOUCH_MODE              = 0x302104,
+        REG_TOUCH_ADC_MODE          = 0x302108, // Compatibility
+        REG_CTOUCH_EXTENDED         = 0x302108, // Extended mode
+        REG_TOUCH_CHARGE            = 0x30210C,
+        REG_TOUCH_SETTLE            = 0x302110,
+        REG_TOUCH_OVERSAMPLE        = 0x302114,
+        REG_TOUCH_RZTHRESH          = 0x302118,
+        REG_TOUCH_RAW_XY            = 0x30211C, // Compatibility
+        REG_CTOUCH_TOUCH1_XY        = 0x30211C, // Extended mode
+        REG_TOUCH_RZ                = 0x302120, // Compatibility
+        REG_CTOUCH_TOUCH4_Y         = 0x302120, // Extended mode
+        REG_TOUCH_SCREEN_XY         = 0x302124, // Compatibility
+        REG_CTOUCH_TOUCH0_XY        = 0x302124, // Extended mode
+        REG_TOUCH_TAG_XY            = 0x302128,
+        REG_TOUCH_TAG               = 0x30212C,
+        REG_TOUCH_TAG1_XY           = 0x302130,
+        REG_TOUCH_TAG1              = 0x302134,
+        REG_TOUCH_TAG2_XY           = 0x302138,
+        REG_TOUCH_TAG2              = 0x30213C,
+        REG_TOUCH_TAG3_XY           = 0x302140,
+        REG_TOUCH_TAG3              = 0x302144,
+        REG_TOUCH_TAG4_XY           = 0x302148,
+        REG_TOUCH_TAG4              = 0x30214C,
+        REG_TOUCH_TRANSFORM_A       = 0x302150,
+        REG_TOUCH_TRANSFORM_B       = 0x302154,
+        REG_TOUCH_TRANSFORM_C       = 0x302158,
+        REG_TOUCH_TRANSFORM_D       = 0x30215C,
+        REG_TOUCH_TRANSFORM_E       = 0x302160,
+        REG_TOUCH_TRANSFORM_F       = 0x302164,
+        REG_CYA_TOUCH               = 0x302168,
+        REG_CTOUCH_TOUCH4_X         = 0x30216C, // Extended mode
+        REG_ANALOG                  = 0x30216C, // Alias; not in datasheet v1.2
+        REG_PATCHED_TOUCH_FAULT     = 0x30216C, // Alias; not in datasheet v1.2
+        REG_PATCHED_ANALOG          = 0x302170, // Not in datasheet v1.2
+        REG_TOUCH_FAULT             = 0x302170, // Not in datasheet v1.2
+        REG_BIST_EN                 = 0x302174,
+        REG_CRC                     = 0x302178, // Not in datasheet v1.2
+        REG_SPI_EARLY_TX            = 0x30217C, // Not in datasheet v1.2
+        REG_TRIM                    = 0x302180,
+        REG_ANA_COMP                = 0x302184,
+        REG_SPI_WIDTH               = 0x302188,
+        REG_TOUCH_DIRECT_XY         = 0x30218C, // Compatibility
+        REG_CTOUCH_TOUCH2_XY        = 0x30218C, // Extended mode
+        REG_TOUCH_DIRECT_Z1Z2       = 0x302190, // Compatibility
+        REG_CTOUCH_TOUCH3_XY        = 0x302190, // Extended mode
+        // 0x30902194 - 0x302560 Reserved
+        REG_DATESTAMP               = 0x302564, // 16 bytes
+        REG_CMDB_SPACE              = 0x302574,
+        REG_CMDB_WRITE              = 0x302578,
+        // All following are not in datasheet v1.2 section 5.1
+        REG_TRACKER                 = 0x309000,
+        REG_TRACKER_1               = 0x309004,
+        REG_TRACKER_2               = 0x309008,
+        REG_TRACKER_3               = 0x30900C,
+        REG_TRACKER_4               = 0x309010,
+        REG_MEDIAFIFO_READ          = 0x309014,
+        REG_MEDIAFIFO_WRITE         = 0x309018,
+    }   REG;
 
     // Display list commands (ProgGuide ch.4)
     typedef enum
@@ -305,6 +324,7 @@ public:
         ENC_CMD_FGCOLOR                 = 0xFFFFFF0A,
         ENC_CMD_GRADIENT                = 0xFFFFFF0B,
         ENC_CMD_TEXT                    = 0xFFFFFF0C,
+        ENC_CMD_TEXTF                   = 0xFFFFFF0C, // Alias for use with program memory string
         ENC_CMD_BUTTON                  = 0xFFFFFF0D,
         ENC_CMD_KEYS                    = 0xFFFFFF0E,
         ENC_CMD_PROGRESS                = 0xFFFFFF0F,
@@ -461,6 +481,7 @@ public:
 
     // Options for coprocessor commands (ProgGuide 5.8 p.158)
     // NOTE: These are flags; they may be combined.
+    // Remarks show commands for which the options are valid
     typedef enum {
         OPT_NONE                    = 0x0000,
         OPT_3D                      = 0x0000, // BUTTON, CLOCK, KEYS, GAUGE, SLIDER, DIAL, TOGGLE, PROGRESS, SCROLLBAR
@@ -512,27 +533,31 @@ public:
     const static uint32_t ADPCM_SAMPLES         = 0x00000002UL;
 
     //-----------------------------------------------------------------------
-    // "Host commands", see Datasheet 4.1.5 p.16
-    enum HOSTCMD
+    // "Host commands" and memory read/write operations (see datasheet 
+    // section 4.1) are almost the same. They are all represented here as
+    // host commands.
+    //
+    // Only the lower 24 bits are significant. The "ACTIVE" command is
+    // partially identical to a "read memory location 0" operation but
+    // doesn't require a dummy byte.
+    typedef enum
     {
-        ACTIVE          = 0x00,
-        STANDBY         = 0x41,
-        PWRDOWN         = 0x50, // or 0x43
-        PD_ROMS         = 0x49,
-        CLKEXT          = 0x44,
-        CLKINT          = 0x48,
-        CLKSEL          = 0x61, // or 0x62
-        RST_PULSE       = 0x68,
-        PINDRIVE        = 0x70,
-        PIN_PD_STATE    = 0x71,
-    };
-
-    // Host memory operations
-    enum MEM_OPERATION
-    {
-        READ            = 0x0,          // Read from FT81X to host
-        WRITE           = 0x80,         // Write from host to FT81X
-    };
+        HOSTCMD_ACTIVE              = 0x00000000, // Same as "read 0" but no address and no dummy byte
+        HOSTCMD_READ                = 0x00000000, // Add address, send dummy byte
+        HOSTCMD_STANDBY             = 0x00410000,
+        HOSTCMD_SLEEP               = 0x00420000,
+        HOSTCMD_PWRDOWN1            = 0x00430000, // Equivalent to 0x00500000
+        HOSTCMD_CLKEXT              = 0x00440000,
+        HOSTCMD_CLKINT              = 0x00480000,
+        HOSTCMD_PD_ROMS             = 0x00490000,
+        HOSTCMD_PWRDOWN             = 0x00500000, // or 0x43000000
+        HOSTCMD_CLKSEL              = 0x00610000, // or 0x62000000
+        HOSTCMD_CLKSEL1             = 0x00620000, // Equivalent to 0x00610000
+        HOSTCMD_RST_PULSE           = 0x00680000,
+        HOSTCMD_PINDRIVE            = 0x00700000,
+        HOSTCMD_PIN_PD_STATE        = 0x00710000,
+        HOSTCMD_WRITE               = 0x00800000, // Add address
+    }   HOSTCMD;
 
     // Clock selection parameter; also used in the initialization parameters
     enum CLOCK
@@ -627,6 +652,10 @@ protected:
 public:
     //-----------------------------------------------------------------------
     // Constructor
+    //
+    // NOTE: Although the pin numbers are optional, the display probably
+    // won't function without them, unless you create a subclass that
+    // controls those lines by overriding the appropriate functions.
     StEVE(
         const DisplayProfile &profile,  // Display profile
         SPIClass &spi,                  // SPI instance; call begin() first
@@ -806,12 +835,12 @@ public:
         else
         {
             DBG_TRAFFIC("Setting clock mode to %X\n", _profile._clock);
-            HostCommand(CLKEXT);
-            HostCommand(CLKSEL, (uint8_t)_profile._clock);
+            HostCommand(HOSTCMD_CLKEXT);
+            HostCommand(HOSTCMD_CLKSEL, (uint8_t)_profile._clock);
         }
 
         // Activate the FT81X and give it some time to initialize
-        HostCommand(ACTIVE, 0);
+        HostCommand(HOSTCMD_ACTIVE, 0);
         delay(40);
 
         // Repeatedly poll REG_ID with up to 250 maximum retries and a 1 ms
@@ -996,7 +1025,7 @@ protected:
     //-----------------------------------------------------------------------
     // Read an 8-bit value
     //
-    // Internal variables aren't updated and the Select line is not changed.
+    // No member variables are changed
     uint8_t Receive8() const
     {
         uint8_t result;
@@ -1011,7 +1040,7 @@ protected:
     //-----------------------------------------------------------------------
     // Read a 16-bit value in little-endian format
     //
-    // Internal variables aren't updated and the Select line is not changed.
+    // No member variables are changed
     uint16_t Receive16() const
     {
         uint16_t result;
@@ -1027,7 +1056,7 @@ protected:
     //-----------------------------------------------------------------------
     // Read a 32-bit value in little-endian format
     //
-    // Internal variables aren't updated and the Select line is not changed.
+    // No member variables are changed
     uint32_t Receive32() const
     {
         uint32_t result;
@@ -1045,7 +1074,7 @@ protected:
     //-----------------------------------------------------------------------
     // Write an 8 bit value
     //
-    // Internal variables aren't updated and the Select line is not changed.
+    // No member variables are changed
     //
     // Yes it's a little silly to declare this function which is basically
     // just an equivalent of the SPI transfer function but this way it makes
@@ -1060,7 +1089,7 @@ protected:
     //-----------------------------------------------------------------------
     // Write a 16-bit value in little-endian format
     //
-    // Internal variables aren't updated and the Select line is not changed.
+    // No member variables are changed
     void Send16(
         uint16_t value) const
     {
@@ -1072,7 +1101,7 @@ protected:
     //-----------------------------------------------------------------------
     // Write a 32 bit value in little-endian format
     //
-    // Internal variables aren't updated and the Select line is not changed.
+    // No member variables are changed
     void Send32(
         uint32_t value) const
     {
@@ -1150,9 +1179,9 @@ protected:
 
         // Initialize the remaining length
         uint16_t len = maxlen; // Underflows for input value 0
-        if ((!len) || (len > 256)) // Max 256 bytes supported
+        if ((!len) || (len > MaxStringSize))
         {
-            len = 256;
+            len = MaxStringSize;
         }
 
         const char *s = message;
@@ -1217,7 +1246,7 @@ protected:
         const __FlashStringHelper *message, // Characters to send, '\0' is end
         uint16_t maxlen) const          // Max input length including \0
     {
-        char buf[256];
+        char buf[MaxStringSize];
 
         if ((!maxlen) || (maxlen > sizeof(buf)))
         {
@@ -1233,54 +1262,76 @@ protected:
     }
 
     /////////////////////////////////////////////////////////////////////////
-    // HOST COMMANDS
+    // START AND END TRANSACTIONS
     /////////////////////////////////////////////////////////////////////////
 
 protected:
     //-----------------------------------------------------------------------
-    // Send a host command
+    // Begin a transaction, i.e. a Host Command, or a Memory Read/Write
     //
-    // Referred to as "host_command()" in the FT81X documentation
-    void HostCommand(
-        HOSTCMD cmd,                    // Command to send
-        uint8_t parameter = 0)          // Parameter for the command
+    // In most cases, this shouldn't be called directly. Call the other
+    // functions below instead to send a host command or read/write from/to
+    // memory.
+    void BeginTransaction(
+        uint32_t data24)                // 24-bit value to send
     {
-        DBG_TRAFFIC("Host command %X\n", cmd);
+        DBG_TRAFFIC("*** Transaction %06X\n", data24);
 
+        // Make sure the previous transaction has ended.
+        // Then start a new transaction by selecting the chip.
+        EndTransaction();
+        // TODO: Delay?
         Select(true);
 
-        // 1st byte is the command
-        _spi.transfer((uint8_t)cmd);
+        // Send the lower 3 bytes of the command in BIG ENDIAN order.
+        // NOTE: Don't use the Send functions here; they are little-endian.
+        _spi.transfer((uint8_t)(data24 >> 16));
+        _spi.transfer((uint8_t)(data24 >> 8));
+        _spi.transfer((uint8_t)(data24));
+    }
 
-        // 2nd byte is the parameter
-        _spi.transfer(parameter);
-
-        // 3rd byte is always 0
-        _spi.transfer(0);
-
+protected:
+    //-----------------------------------------------------------------------
+    // End a transaction by de-selecting the chip.
+    //
+    // This is usually not necessary: Beginning a new transaction will end
+    // the previous transaction.
+    void EndTransaction()
+    {
         Select(false);
     }
 
 protected:
     //-----------------------------------------------------------------------
-    // Select the chip and send the host command to read or write data
+    // Read or write data
     //
-    // Referred to as "Host Memory Read/Write" in the documentation
-    void SelectAndAddress(
-        uint32_t address,               // Address to access
-        MEM_OPERATION operation)        // Read or write
+    // After calling this, subsequent transfers will copy data to/from
+    // consecutive memory locations.
+    void BeginMemoryTransaction(
+        uint32_t address22,             // Address (22 bits, not checked)
+        bool write)                     // False = read, true = write
     {
-        DBG_TRAFFIC("Address %X %s\n", address, operation == WRITE ? "WRITE" : "READ");
-        Select(true);
+        DBG_TRAFFIC("Address %X %s\n", address22, write ? "WRITE" : "READ");
 
-        // Send Operation plus high address byte
-        _spi.transfer((uint8_t)(address >> 16) | (uint8_t)operation);
+        BeginTransaction((uint32_t)(write ? HOSTCMD_WRITE : HOSTCMD_READ) | address22);
 
-        // Send middle address byte
-        _spi.transfer((uint8_t)(address >> 8));
+        // In read mode, a dummy byte must be sent to the EVE before
+        // receiving the data.
+        if (!write)
+        {
+            _spi.transfer(0);
+        }
+    }
 
-        // Send low address byte
-        _spi.transfer((uint8_t)(address));
+protected:
+    //-----------------------------------------------------------------------
+    // Send a Host Command
+    void HostCommand(
+        HOSTCMD hostcmd,                // Host command (not READ or WRITE)
+        uint8_t parameter = 0)          // Parameter, if any
+    {
+        // The parameter is passed in the second byte
+        return BeginTransaction((uint32_t)hostcmd | (uint32_t)parameter << 8);
     }
 
     /////////////////////////////////////////////////////////////////////////
@@ -1294,22 +1345,17 @@ protected:
     // Referred to as "rd8" in the documentation
     uint8_t                             // Returns data at given address
     RegRead8(
-        uint32_t address)               // Address (22 bits; not checked)
+        uint32_t address22)             // Address (22 bits; not checked)
     {
         uint8_t result;
 
-        // Send the 24-bit address and operation flag.
-        SelectAndAddress(address, READ);
+        // Send the 22-bit address and operation flag.
+        BeginMemoryTransaction(address22, false);
 
-        // Send dummy byte
-        _spi.transfer(0);
-
-        // Send another dummy; the EVE returns the data
+        // Get the value
         result = Receive8();
 
-        Select(false);
-
-        DBG_TRAFFIC("Reg %X = %X\n", address, result);
+        DBG_TRAFFIC("Reg %X = %X\n", address22, result);
 
         return result;
     }
@@ -1321,22 +1367,17 @@ protected:
     // Referred to as "rd16" in the documentation
     uint16_t                            // Returns data at given address
     RegRead16(
-        uint32_t address)               // Address (22 bits; not checked)
+        uint32_t address22)             // Address (22 bits; not checked)
     {
         uint16_t result;
 
         // Send the 24-bit address and operation flag.
-        SelectAndAddress(address, READ);
-
-        // Send dummy byte
-        _spi.transfer(0);
+        BeginMemoryTransaction(address22, false);
 
         // Get the value
         result = Receive16();
 
-        Select(false);
-
-        DBG_TRAFFIC("Reg %X = %X\n", address, result);
+        DBG_TRAFFIC("Reg %X = %X\n", address22, result);
 
         return result;
     }
@@ -1348,22 +1389,17 @@ protected:
     // Referred to as "rd32" in the documentation
     uint32_t                            // Returns data at given address
     RegRead32(
-        uint32_t address)               // Address (22 bits; not checked)
+        uint32_t address22)             // Address (22 bits; not checked)
     {
         uint32_t result;
 
         // Send the 24-bit address and operation flag.
-        SelectAndAddress(address, READ);
-
-        // Send dummy byte
-        _spi.transfer(0);
+        BeginMemoryTransaction(address22, false);
 
         // Get the value
         result = Receive32();
 
-        Select(false);
-
-        DBG_TRAFFIC("Reg %X = %X\n", address, result);
+        DBG_TRAFFIC("Reg %X = %X\n", address22, result);
 
         return result;
     }
@@ -1377,7 +1413,7 @@ protected:
     // is successful if the function returns nonzero.
     uint8_t                             // Returns num retries remaining
     RegWait8(
-        uint32_t address,               // Address to read
+        uint32_t address22,             // Address (22 bits; not checked)
         uint8_t value,                  // Expected value
         uint8_t maxtries,               // Maximum number of tries
         uint32_t delay_between_tries)   // Delay between tries in ms
@@ -1387,7 +1423,7 @@ protected:
 
         while (result)
         {
-            read_value = RegRead8(address);
+            read_value = RegRead8(address22);
 
             if (read_value == value)
             {
@@ -1400,33 +1436,27 @@ protected:
             result--;
         }
 
-        DBG_GEEK("Timeout waiting for %X to become %X, last read value was %X\n", address, value, read_value);
+        DBG_GEEK("Timeout waiting for %X to become %X, last read value was %X\n", address22, value, read_value);
         return result;
     }
 
 protected:
     //-----------------------------------------------------------------------
     // Read a block of memory
-    void RegReadArray(
-        uint32_t address,               // Address to read from
+    void RegReadBuffer(
+        uint32_t address22,             // Address (22 bits; not checked)
         uint16_t length,                // Number of bytes to read
         uint8_t *destination)           // Destination buffer
     {
-        DBG_TRAFFIC("Reading %X length %X (%u dec)\n", address, length, length);
+        DBG_TRAFFIC("Reading %X length %X (%u dec)\n", address22, length, length);
 
-        SelectAndAddress(address, READ);
+        BeginMemoryTransaction(address22, false);
 
-        // Send dummy byte
-        _spi.transfer(0);
-
-        // Read the block of memory
-        // TODO: Use block transfer of SPI class?
+        // TODO: Use SPI block transfer function?
         for (uint16_t i = 0; i < length; i++)
         {
             *destination++ = _spi.transfer(0);
         }
-
-        Select(false);
     }
 
 protected:
@@ -1435,16 +1465,14 @@ protected:
     //
     // Referred to as "wr8" in the documentation
     void RegWrite8(
-        uint32_t address,               // Address to store data
+        uint32_t address22,             // Address (22 bits; not checked)
         uint8_t value)                  // Value to store
     {
-        DBG_TRAFFIC("Writing %X = %02X\n", address, value);
+        DBG_TRAFFIC("Writing %X = %02X\n", address22, value);
 
-        SelectAndAddress(address, WRITE);
+        BeginMemoryTransaction(address22, true);
 
         _spi.transfer(value);
-
-        Select(false);
     }
 
 protected:
@@ -1453,16 +1481,14 @@ protected:
     //
     // Referred to as "wr16" in the documentation
     void RegWrite16(
-        uint32_t address,               // Address to store data
+        uint32_t address22,             // Address (22 bits; not checked)
         uint16_t value)                 // Value to store
     {
-        DBG_TRAFFIC("Writing %X = %04X\n", address, value);
+        DBG_TRAFFIC("Writing %X = %04X\n", address22, value);
 
-        SelectAndAddress(address, WRITE);
+        BeginMemoryTransaction(address22, true);
 
         Send16(value);
-
-        Select(false);
     }
 
 protected:
@@ -1471,16 +1497,14 @@ protected:
     //
     // Referred to as "wr32" in the documentation
     void RegWrite32(
-        uint32_t address,               // Address to store data
+        uint32_t address22,             // Address (22 bits; not checked)
         uint32_t value)                 // Value to store
     {
-        DBG_TRAFFIC("Writing %X = %08X\n", address, value);
+        DBG_TRAFFIC("Writing %X = %08X\n", address22, value);
 
-        SelectAndAddress(address, WRITE);
+        BeginMemoryTransaction(address22, true);
 
         Send32(value);
-
-        Select(false);
     }
 
     /////////////////////////////////////////////////////////////////////////
@@ -1581,6 +1605,8 @@ protected:
     // (not writing). So this can be called repeatedly to check if there's
     // enough space for a certain command, e.g. when sending large amounts
     // of data such as a bitmap.
+    //
+    // See also App Note 240 p.21
     uint16_t                            // Returns number of bytes free
     CmdGetFreeCmdSpace()
     {
@@ -1599,18 +1625,18 @@ protected:
 
 protected:
     //-----------------------------------------------------------------------
-    // Store a co-processor command with no parameters and keep EVE selected
+    // Store a co-processor command with no parameters
     //
     // The class keeps track of the current location and updates it to the
     // next location. Normally it's not necessary to do anything with the
     // return value.
     CmdIndex                            // Returns updated Cmd index
-    CmdSelect(
+    Cmd(
         uint32_t command)               // Command to queue
     {
         DBG_GEEK("cmd(%08X)\n", command);
 
-        SelectAndAddress(RAM_CMD + _cmd_index.index(), WRITE);
+        BeginMemoryTransaction(RAM_CMD + _cmd_index.index(), true);
 
         // Send the command
         Send32(command);
@@ -1618,32 +1644,19 @@ protected:
         return _cmd_index += 4;
     }
 
-protected:
-    //-----------------------------------------------------------------------
-    // Store a co-processor command with no parameters, and de-select the EVE
-    CmdIndex                            // Returns updated Cmd index
-    Cmd(
-        uint32_t command)               // Command to queue
-    {
-        CmdIndex result = CmdSelect(command);
-
-        Select(false);
-
-        return result;
-    }
-
 public:
     //-----------------------------------------------------------------------
     // Wait until the co-processor has caught up.
     //
-    // NOTE: This should only be called after starting the co-processor.
-    // TODO: For this reason, the function should not exist: If called
-    // under the wrong circumstances, it waits forever in a busy loop.
-    // We should have a CmdIsComplete function that returns immediately.
+    // If the co-processor has nothing to do, the function will return
+    // immediately.
     //
-    // This can be used to wait for the end of a frame, and to retrieve
-    // the location where the next command will be stored without storing
-    // another command first.
+    // NOTE: Simply adding commands doesn't start the co-processor. You must
+    // call the Execute() function below.
+    //
+    // This can be used to wait for the end of a frame (if REG_DL_SWAP is
+    // in mode DLSWAP_FRAME), and to retrieve the location where the next
+    // command will be stored, without storing another command first.
     CmdIndex                            // Returns updated Cmd index
     CmdWaitComplete()
     {
@@ -1822,18 +1835,15 @@ public:
     #define MM(value, len) (result += SendBuffer(value, len))
     // 4 byte output value: Store Cmd index to parameter and bump cmd index
     #define Q4(name) ((*name = _cmd_index + result), V4(0))
-    // Send command and data, keep EVE selected
-    #define CMDSEL(name, declaration, value) \
-        CmdIndex cmd_##name declaration { CmdSelect(ENC_CMD_##name); int16_t result = 0;(value); return _cmd_index += result; }
-    // Send command and de-select
+    // Send command and data
     #define CMD(name, declaration, value) \
-        CmdIndex cmd_##name declaration { CmdSelect(ENC_CMD_##name); int16_t result = 0;(value); Select(false); return _cmd_index += result; }
+        CmdIndex cmd_##name declaration { Cmd(ENC_CMD_##name); int16_t result = 0; (value); return _cmd_index += result; }
     // Send command that has outputs (May possibly be changed later)
     // (The caller should start the co-processor and wait until it executes
     // the commands, then retrieve the output data using CmdRead with the
     // command index values that are returned by the function)
-    #define CMDOUT CMDSEL
-    // Send command with no parameters and de-select
+    #define CMDOUT CMD
+    // Send command with no parameters
     #define CMD0(name) \
         CmdIndex cmd_##name() { return Cmd(ENC_CMD_##name); }
     CMD0(DLSTART                                                                                                                                                                                                                             ) // ProgGuide 5.11 p.162
@@ -1843,8 +1853,8 @@ public:
     CMD(APPEND,         (uint32_t ptr32, uint32_t num32),                                                                                               (V4(ptr32),V4(num32)                                                                )) // ProgGuide 5.15 p.165
     CMD(REGREAD,        (uint32_t ptr32, uint32_t result32),                                                                                            (V4(ptr32),V4(result32)                                                             )) // ProgGuide 5.16 p.166
     CMD(MEMWRITE,       (uint32_t ptr32, uint32_t num, const uint8_t *data),                                                                            (V4(ptr32),V4(num),MM(data, num)                                                    )) // ProgGuide 5.17 p.167
-    CMDSEL(INFLATE,     (uint32_t ptr32, uint32_t num, const uint8_t *data),                                                                            (V4(ptr32),MM(data, num)                                                            )) // ProgGuide 5.18 p.168
-    CMDSEL(LOADIMAGE,   (uint32_t ptr32, OPT options32, uint32_t num, const uint8_t *data),                                                             (V4(ptr32),V4(options32),MM(data, num)                                              )) // ProgGuide 5.19 p.169
+    CMD(INFLATE,        (uint32_t ptr32, uint32_t num, const uint8_t *data),                                                                            (V4(ptr32),MM(data, num)                                                            )) // ProgGuide 5.18 p.168
+    CMD(LOADIMAGE,      (uint32_t ptr32, OPT options32, uint32_t num, const uint8_t *data),                                                             (V4(ptr32),V4(options32),MM(data, num)                                              )) // ProgGuide 5.19 p.169
     CMD(MEDIAFIFO,      (uint32_t ptr32, uint32_t size32),                                                                                              (V4(ptr32),V4(size32)                                                               )) // ProgGuide 5.20 p.170
     CMD(PLAYVIDEO,      (OPT options),                                                                                                                  (V4(options)                                                                        )) // ProgGuide 5.21 p.171
     CMD0(VIDEOSTART                                                                                                                                                                                                                          ) // ProgGuide 5.22 p.172
@@ -1867,6 +1877,7 @@ public:
     CMD(DIAL,           (int16_t x16, int16_t y16, int16_t r16, OPT options, uint16_t val16),                                                           (V2(x16),V2(y16),V2(r16),V2(options),V2(val16),V2(0)                                )) // ProgGuide 5.39 p.207
     CMD(TOGGLE,         (int16_t x16, int16_t y16, int16_t w16, uint16_t font5, OPT options, uint16_t state16, const char *message, uint16_t len = 0),  (V2(x16),V2(y16),V2(w16),V2(font5),V2(options),V2(state16),SS(message, len)         )) // ProgGuide 5.40 p.210
     CMD(TEXT,           (int16_t x16, int16_t y16, int16_t font5, OPT options, const char *message, uint16_t len = 0),                                  (V2(x16),V2(y16),V2(font5),V2(options),SS(message, len)                             )) // ProgGuide 5.41 p.213
+    CMD(TEXTF,          (int16_t x16, int16_t y16, int16_t font5, OPT options, const __FlashStringHelper *message),                                     (V2(x16),V2(y16),V2(font5),V2(options),SF(message, 0)                               )) // ProgGuide 5.41 p.213
     CMD(SETBASE,        (uint32_t b6),                                                                                                                  (V4(b6)                                                                             )) // ProgGuide 5.42 p.216
     CMD(NUMBER,         (int16_t x16, uint16_t y16, int16_t font5, OPT options, int32_t n32),                                                           (V2(x16),V2(y16),V2(font5),V2(options),V4(n32)                                      )) // ProgGuide 5.43 p.217
     CMD0(LOADIDENTITY                                                                                                                                                                                                                        ) // ProgGuide 5.44 p.220
@@ -2000,7 +2011,7 @@ public:
         uint16_t point_y,               // Y coordinate
         uint16_t ball_size)             // Diameter
     {
-        // Select the size of the dot to draw
+        // Set the size of the dot to draw
         cmd_POINT_SIZE(ball_size);
 
         // Indicate to draw a point (dot)
@@ -2111,4 +2122,85 @@ public:
         return _cmd_index;
     }
 
+public:
+    //-----------------------------------------------------------------------
+    // Display a blank screen with a text and a spinner
+    CmdIndex                            // Returns updated Cmd index
+    CmdStartSpinner(
+        uint32_t clearcolor24,          // Clear color (RGB)
+        uint32_t textcolor24,           // Text color (RGB)
+        uint32_t spinnercolor24,        // Spinner color (RGB)
+        const __FlashStringHelper *message) // Text to display
+    {
+        //Make sure that the chip is caught up.
+        CmdWaitComplete();
+
+        //========== START THE DISPLAY LIST ==========
+        // Start the display list
+        cmd_DLSTART();
+
+        // Set the default clear color
+        cmd_CLEAR_COLOR(clearcolor24);
+
+        // Clear the screen - this and the previous prevent artifacts between lists
+        cmd_CLEAR(1, 1, 1);
+
+        //Solid color -- not transparent
+        cmd_COLOR_A(255);
+
+        //========== ADD GRAPHIC ITEMS TO THE DISPLAY LIST ==========
+        // Set the drawing for the text
+        cmd_COLOR(textcolor24);
+
+        // Display the caller's message at the center of the screen using bitmap handle 27
+        cmd_TEXTF(_hcenter, _vcenter, 27, OPT_CENTER, message);
+
+        // Set the drawing color for the spinner
+        cmd_COLOR(spinnercolor24);
+
+        //Send the spinner go command
+        cmd_SPINNER(_hcenter, _vcenter, 0, 1);
+
+        // Instruct the graphics processor to show the list
+        return CmdDlFinish();
+    }
+
+public:
+    //-----------------------------------------------------------------------
+    // Stop the spinner if one is displayed
+    CmdIndex                            // Returns updated Cmd index
+    CmdStopSpinner(
+        uint32_t clearcolor24,          // Clear color (RGB)
+        uint32_t textcolor24,           // Text color (RGB)
+        const __FlashStringHelper *message) // Text to display
+    {
+        //Make sure that the chip is caught up.
+        CmdWaitComplete();
+
+        //========== START THE DISPLAY LIST ==========
+        // Start the display list
+        cmd_DLSTART();
+
+        // Set the default clear color
+        cmd_CLEAR_COLOR(clearcolor24);
+
+        // Clear the screen - this and the previous prevent artifacts between lists
+        cmd_CLEAR(1, 1, 1);
+
+        //Solid color -- not transparent
+        cmd_COLOR_A(255);
+
+        //========== STOP THE SPINNER ==========
+        cmd_STOP();
+
+        //========== ADD GRAPHIC ITEMS TO THE DISPLAY LIST ==========
+        // Set the drawing for the text
+        cmd_COLOR(textcolor24);
+
+        // Display the caller's message at the center of the screen using bitmap handle 27
+        cmd_TEXTF(_hcenter, _vcenter, 27, OPT_CENTER, message);
+
+        // Instruct the graphics processor to show the list
+        return CmdDlFinish();
+    }
 };
