@@ -57,7 +57,7 @@ class BounceDemo
 
     public:
     //-----------------------------------------------------------------------
-    // Add commands to display list
+    // Add commands to the list
     //
     // This should be called in the loop() function
     void AddCommands()

@@ -1259,6 +1259,9 @@ build.keylayout=US_ENGLISH
     <Folder Include="__vm\" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BmpDemo.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="BounceDemo.h">
       <SubType>compile</SubType>
     </Compile>
@@ -1281,6 +1284,9 @@ build.keylayout=US_ENGLISH
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="CFA480128Ex_039Tx_Splash_PNG.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="CLOUDS.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="demos.cpp">

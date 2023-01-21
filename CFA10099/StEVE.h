@@ -1443,9 +1443,10 @@ protected:
 protected:
     //-----------------------------------------------------------------------
     // Read a block of memory
-    void RegReadBuffer(
+    uint32_t                            // Returns next address to read from
+    RegReadBuffer(
         uint32_t address22,             // Address (22 bits; not checked)
-        uint16_t length,                // Number of bytes to read
+        uint32_t length,                // Number of bytes to read
         uint8_t *destination)           // Destination buffer
     {
         DBG_TRAFFIC("Reading %X length %X (%u dec)\n", address22, length, length);
@@ -1453,10 +1454,12 @@ protected:
         BeginMemoryTransaction(address22, false);
 
         // TODO: Use SPI block transfer function?
-        for (uint16_t i = 0; i < length; i++)
+        for (uint32_t i = 0; i < length; i++)
         {
             *destination++ = _spi.transfer(0);
         }
+
+        return address22 + length;
     }
 
 protected:
@@ -1505,6 +1508,28 @@ protected:
         BeginMemoryTransaction(address22, true);
 
         Send32(value);
+    }
+
+public:
+    //-----------------------------------------------------------------------
+    // Write a block of memory
+    uint32_t                            // Returns next address to write to
+    RegWriteBuffer(
+        uint32_t address22,             // Address (22 bits; not checked)
+        uint32_t length,                // Number of bytes to read
+        const uint8_t *source)          // Source buffer
+    {
+        DBG_TRAFFIC("Writing %X length %X (%u dec)\n", address22, length, length);
+
+        BeginMemoryTransaction(address22, true);
+
+        // TODO: Use SPI block transfer function?
+        for (uint32_t i = 0; i < length; i++)
+        {
+            _spi.transfer(*source++);
+        }
+
+        return address22 + length;
     }
 
     /////////////////////////////////////////////////////////////////////////
@@ -1806,7 +1831,7 @@ public:
     ENC(STENCIL_OP,        (STENCIL  sfail,    STENCIL  spass),                                                         (sfail, spass),                             N(sfail,     5,  3) | N(spass,     2,  0)                                                            ) // ProgGuide 4.44 p.141
     ENC(TAG,               (uint8_t  tag8),                                                                             (tag8),                                     N(tag8,      7,  0)                                                                                  ) // ProgGuide 4.45 p.143
     ENC(TAG_MASK,          (uint8_t  mask1),                                                                            (mask1),                                    N(mask1,     0,  0)                                                                                  ) // ProgGuide 4.46 p.144
-    ENC(VERTEX2F,          (uint16_t x15,      uint16_t y15),                                                           (x15, y15),                                 N(x15,      29, 15) | N(y15,      14,  0)                                                            ) // ProgGuide 4.47 p.145
+    ENC(VERTEX2F,          (int16_t  x15,      int16_t  y15),                                                           (x15, y15),                                 N(x15,      29, 15) | N(y15,      14,  0)                                                            ) // ProgGuide 4.47 p.145
     ENC(VERTEX2II,         (uint16_t x9,       uint16_t y9,       uint8_t  handle5, uint8_t  cell6),                    (x9, y9, handle5, cell6),                   N(x9,       29, 21) | N(y9,       20, 12) | N(handle5, 11,  7) | N(cell6,  6,  0)                    ) // ProgGuide 4.48 p.146
     ENC(VERTEX_FORMAT,     (uint8_t  frac3),                                                                            (frac3),                                    N(frac3,     2,  0)                                                                                  ) // ProgGuide 4.49 p.147
     ENC(VERTEX_TRANSLATE_X,(uint32_t x17),                                                                              (x17),                                      N(x17,      16,  0)                                                                                  ) // ProgGuide 4.50 p.148

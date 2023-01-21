@@ -150,11 +150,11 @@ void SerPrintFF(const __FlashStringHelper *fmt, ...);
 // Our demonstrations of various EVE functions
 #include "demos.h"
 
-
 #include "StEVE.h"
+#include "CLOUDS.h"
 
 #include "BounceDemo.h"
-
+#include "BmpDemo.h"
 
 StEVE::DisplayProfile cfa480128profile =
 {
@@ -210,6 +210,7 @@ StEVE::DisplayProfile cfa480128profile =
 StEVE steve(cfa480128profile, SPI, 8000000, 9, 8, 7);
 
 BounceDemo bounceDemo(steve);
+BmpDemo bmpDemo(steve);
 
 void setup()
 {
@@ -221,13 +222,14 @@ void setup()
     DBG_STAT("Begin\n");
     steve.Begin();
 
+    bmpDemo.Init(0, CLOUDS, sizeof(CLOUDS), CLOUDS_width, CLOUDS_height, StEVE::FORMAT_RGB565, 1, -1);
     bounceDemo.Init();
 
     DBG_STAT("End Setup\n");
 
-    steve.CmdStartSpinner(steve.RGB(0, 0, 0), steve.RGB(255, 255, 255), steve.RGB(255, 0, 255), F("STEVE!"));
-    delay(5000);
-    steve.CmdStopSpinner(steve.RGB(255, 255, 255), steve.RGB(255, 255, 255), F("BOB"));
+//     steve.CmdStartSpinner(steve.RGB(0, 0, 0), steve.RGB(255, 255, 255), steve.RGB(255, 0, 255), F("STEVE!"));
+//     delay(5000);
+//     steve.CmdStopSpinner(steve.RGB(255, 255, 255), steve.RGB(255, 255, 255), F("BOB"));
 }
 
 void loop()
@@ -240,8 +242,10 @@ void loop()
     // Clear the screen (and clear the current color, stencil and tag)
     steve.CmdClear(0, 0, 0);
 
+    bmpDemo.AddCommands();
     bounceDemo.AddCommands();
 
+    bmpDemo.Cycle();
     bounceDemo.Cycle();
 
     // Instruct graphics processor to show the list
