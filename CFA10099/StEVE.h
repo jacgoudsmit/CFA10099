@@ -121,19 +121,18 @@ public:
 public:
     //-----------------------------------------------------------------------
     // Memory locations
-    const uint32_t CHIP_ID_ADDRESS              = 0x000C0000UL; // Datasheet 5.2 p.45
 
     // Memory map, see datasheet section 5 p.40
-    const static uint32_t RAM_CMD               = 0x00308000UL;
-    const static uint32_t RAM_CMD_SIZE          = 4*1024L;
-    const static uint32_t RAM_DL                = 0x00300000UL;
-    const static uint32_t RAM_DL_SIZE           = 8*1024L;
-    const static uint32_t RAM_G                 = 0x00000000UL;
-    const static uint32_t RAM_G_SIZE            = 1024*1024L;
-    const static uint32_t RAM_REG               = 0x00302000UL;
-    const static uint32_t RAM_ROMSUB            = 0x0030A000UL;
-    const static uint32_t ROM_FONT              = 0x001E0000UL;
-    const static uint32_t ROMFONT_TABLEADDRESS  = 0x002FFFFCUL;
+    const static uint32_t RAM_CMD               = 0x00308000;
+    const static uint32_t RAM_CMD_SIZE          = 4*1024;
+    const static uint32_t RAM_DL                = 0x00300000;
+    const static uint32_t RAM_DL_SIZE           = 8*1024;
+    const static uint32_t RAM_G                 = 0x00000000;
+    const static uint32_t RAM_G_SIZE            = 1024*1024;
+    const static uint32_t RAM_REG               = 0x00302000;
+    const static uint32_t RAM_ROMSUB            = 0x0030A000;
+    const static uint32_t ROM_FONT              = 0x001E0000;
+    const static uint32_t ROMFONT_TABLEADDRESS  = 0x002FFFFC;
 
     typedef Index<RAM_CMD_SIZE> CmdIndex;
     typedef Index<RAM_DL_SIZE> DLIndex;
@@ -259,6 +258,8 @@ public:
         REG_TRACKER_4               = 0x309010,
         REG_MEDIAFIFO_READ          = 0x309014,
         REG_MEDIAFIFO_WRITE         = 0x309018,
+
+        REG_CHIP_ID                 = 0x0C0000, // Datasheet 5.2 p.45
     }   REG;
 
     // Display list commands (ProgGuide ch.4)
@@ -506,31 +507,32 @@ public:
         OPT_NOHANDS                 = 0xC000, // CLOCK
     }   OPT; // 16 bits
 
-    // Constants for registers and command parameters
-    const static uint32_t DLSWAP_DONE           = 0x00000000UL;
-    const static uint32_t DLSWAP_FRAME          = 0x00000002UL;
-    const static uint32_t DLSWAP_LINE           = 0x00000001UL;
-    const static uint32_t INT_CMDEMPTY          = 0x00000020UL;
-    const static uint32_t INT_CMDFLAG           = 0x00000040UL;
-    const static uint32_t INT_CONVCOMPLETE      = 0x00000080UL;
-    const static uint32_t INT_G8                = 0x00000012UL;
-    const static uint32_t INT_L8C               = 0x0000000CUL;
-    const static uint32_t INT_PLAYBACK          = 0x00000010UL;
-    const static uint32_t INT_SOUND             = 0x00000008UL;
-    const static uint32_t INT_SWAP              = 0x00000001UL;
-    const static uint32_t INT_TAG               = 0x00000004UL;
-    const static uint32_t INT_TOUCH             = 0x00000002UL;
-    const static uint32_t INT_VGA               = 0x0000000DUL;
-    const static uint32_t LINEAR_SAMPLES        = 0x00000000UL;
-    const static uint32_t TOUCHMODE_CONTINUOUS  = 0x00000003UL;
-    const static uint32_t TOUCHMODE_FRAME       = 0x00000002UL;
-    const static uint32_t TOUCHMODE_OFF         = 0x00000000UL;
-    const static uint32_t TOUCHMODE_ONESHOT     = 0x00000001UL;
-    const static uint32_t ULAW_SAMPLES          = 0x00000001UL;
-    const static uint32_t VOL_ZERO              = 0x00000000UL;
-    const static uint32_t ADC_DIFFERENTIAL      = 0x00000001UL;
-    const static uint32_t ADC_SINGLE_ENDED      = 0x00000000UL;
-    const static uint32_t ADPCM_SAMPLES         = 0x00000002UL;
+    // Constants for registers
+    // REG_DLSWAP (see ProgGuide p.35)
+    const static uint32_t DLSWAP_DONE           = 0x00000000UL; // Read until value is this, before writing
+    const static uint32_t DLSWAP_LINE           = 0x00000001UL; // Start reading from current DL after current line
+    const static uint32_t DLSWAP_FRAME          = 0x00000002UL; // Start reading from current DL after current frame
+    // REG_INT_EN and REG_INT_FLAGS (see Datasheet 4.1.6 p.20)
+    const static uint32_t INT_SWAP              = 0x00000001UL; // DL swap occurred
+    const static uint32_t INT_TOUCH             = 0x00000002UL; // Touch detected
+    const static uint32_t INT_TAG               = 0x00000004UL; // Touch screen tag value changed
+    const static uint32_t INT_SOUND             = 0x00000008UL; // Sound effect ended
+    const static uint32_t INT_L8C               = 0x0000000CUL; // 
+    const static uint32_t INT_PLAYBACK          = 0x00000010UL; // Audio playback ended
+    const static uint32_t INT_G8                = 0x00000012UL; // 
+    const static uint32_t INT_CMDEMPTY          = 0x00000020UL; // Command FIFO empty
+    const static uint32_t INT_CMDFLAG           = 0x00000040UL; // Flag set by command
+    const static uint32_t INT_CONVCOMPLETE      = 0x00000080UL; // Touch screen conversion complete
+    const static uint32_t INT_VGA               = 0x0000000DUL; // 
+    // REG_PLAYBACK_FORMAT (see ProgGuide p.40)
+    const static uint32_t SAMPLES_LINEAR        = 0x00000000UL; // Linear audio samples
+    const static uint32_t SAMPLES_ULAW          = 0x00000001UL; // uLaw audio samples
+    const static uint32_t SAMPLES_ADPCM         = 0x00000002UL; // IMA ADPCM audio samples
+    // REG_TOUCH_MODE (see ProgGuide p.58)
+    const static uint32_t TOUCHMODE_OFF         = 0x00000000UL; // Touch mode off
+    const static uint32_t TOUCHMODE_ONESHOT     = 0x00000001UL; // Read one touch sample
+    const static uint32_t TOUCHMODE_FRAME       = 0x00000002UL; // Read one touch sample each frame
+    const static uint32_t TOUCHMODE_CONTINUOUS  = 0x00000003UL; // Continuous touch mode up to 1000 Hz
 
     //-----------------------------------------------------------------------
     // "Host commands" and memory read/write operations (see datasheet 
@@ -565,34 +567,34 @@ public:
         // If the internal clock should be used, the value in the init
         // parameters is set to the following and the value of the parameter
         // isn't sent to the FT81X.
-        CLOCK_INT = -1,                 // Use internal clock (60MHz)
+        CLOCK_INT                   = -1,   // Use internal clock (60MHz)
 
         // The following values indicate the required clock multiplier, and
         // the resulting internal frequency based on a connected 12 MHz
         // crystal or other clock source.
-        CLOCK_EXT_DEFAULT   = (0x00),   // External clock, but no multiplier
-        CLOCK_EXT_x2_24MHz  = (0x02),   // 2x multiplier
-        CLOCK_EXT_x3_36MHz  = (0x03),   // 3x multiplier
-        CLOCK_EXT_x4_48MHz  = (0x44),   // 4x multiplier and high PLL range
-        CLOCK_EXT_x5_60MHz  = (0x45),   // 5x multiplier and high PLL range
+        CLOCK_EXT_DEFAULT           = 0x00, // External clock, but no multiplier
+        CLOCK_EXT_x2_24MHz          = 0x02, // 2x multiplier
+        CLOCK_EXT_x3_36MHz          = 0x03, // 3x multiplier
+        CLOCK_EXT_x4_48MHz          = 0x44, // 4x multiplier and high PLL range
+        CLOCK_EXT_x5_60MHz          = 0x45, // 5x multiplier and high PLL range
         // The data sheet doesn't mention the following; they were in the
         // demo code.
-        CLOCK_EXT_x6_72MHz  = (0x46),   // 6x multiplier and high PLL range
-        CLOCK_EXT_x7_84MHz  = (0x47),   // 7x multiplier and high PLL range
+        CLOCK_EXT_x6_72MHz          = 0x46, // 6x multiplier and high PLL range
+        CLOCK_EXT_x7_84MHz          = 0x47, // 7x multiplier and high PLL range
     };
 
     // Chip identifiers
     enum CHIPID
     {
         // Use this value in the init parameters to skip chip ID checking
-        ANY = 0,
+        ANY                         = 0,
 
         // Following are values in the chip ID register just after the
         // processor has been started.
-        FT810 = 0x00011008,
-        FT811 = 0x00011108,
-        FT812 = 0x00011208,
-        FT813 = 0x00011308,
+        FT810                       = 0x00011008,
+        FT811                       = 0x00011108,
+        FT812                       = 0x00011208,
+        FT813                       = 0x00011308,
     };
 
     // This struct is used to describe the hardware parameters for a 
@@ -868,7 +870,7 @@ public:
         // Read the chip ID and match it with the expected value
         if (_profile._chipid != ANY)
         {
-            uint32_t chip_id = RegRead32(CHIP_ID_ADDRESS);
+            uint32_t chip_id = RegRead32(REG_CHIP_ID);
             if (_profile._chipid != (CHIPID)chip_id)
             {
                 DBG_STAT("Chip ID mismatch: Wanted %08X, got %08X\n", _profile._chipid, chip_id);
@@ -1338,7 +1340,7 @@ protected:
     // MEMORY OPERATIONS
     /////////////////////////////////////////////////////////////////////////
 
-protected:
+public:
     //-----------------------------------------------------------------------
     // Read a one-byte register from FT81X memory
     //
@@ -1360,7 +1362,7 @@ protected:
         return result;
     }
 
-protected:
+public:
     //-----------------------------------------------------------------------
     // Read a 2-byte register from FT81X memory
     //
@@ -1382,7 +1384,7 @@ protected:
         return result;
     }
 
-protected:
+public:
     //-----------------------------------------------------------------------
     // Read a 4-byte register from FT81X memory
     //
@@ -1404,7 +1406,7 @@ protected:
         return result;
     }
 
-protected:
+public:
     //-----------------------------------------------------------------------
     // Repeat reading a register until it matches the given value
     //
@@ -1440,7 +1442,7 @@ protected:
         return result;
     }
 
-protected:
+public:
     //-----------------------------------------------------------------------
     // Read a block of memory
     uint32_t                            // Returns next address to read from
@@ -1462,7 +1464,7 @@ protected:
         return address22 + length;
     }
 
-protected:
+public:
     //-----------------------------------------------------------------------
     // Write an 8 bit register
     //
@@ -1478,7 +1480,7 @@ protected:
         _spi.transfer(value);
     }
 
-protected:
+public:
     //-----------------------------------------------------------------------
     // Write a 16 bit register
     //
@@ -1494,7 +1496,7 @@ protected:
         Send16(value);
     }
 
-protected:
+public:
     //-----------------------------------------------------------------------
     // Write a 32 bit register
     //
@@ -1543,7 +1545,7 @@ public:
     // See ProgGuide 5.4 p.154 about how to synchronize the display list
     // with the co-processor command queue.
 
-protected:
+public:
     //-----------------------------------------------------------------------
     // Reset the display list index
     //
@@ -1560,7 +1562,7 @@ protected:
         _dl_index = index % RAM_DL_SIZE;
     }
 
-protected:
+public:
     //-----------------------------------------------------------------------
     // Store a 32 bit display list command
     //
@@ -1586,7 +1588,7 @@ protected:
     // CO-PROCESSOR SUPPORT
     /////////////////////////////////////////////////////////////////////////
 
-protected:
+public:
     //-----------------------------------------------------------------------
     // Read a 32 bit value from the given Cmd index
     //
@@ -1599,7 +1601,7 @@ protected:
         return RegRead32(RAM_CMD + cmdindex.index());
     }
 
-protected:
+public:
     //-----------------------------------------------------------------------
     // Synchronize the local command write index
     //
@@ -1622,7 +1624,7 @@ protected:
         return _cmd_index;
     }
 
-protected:
+public:
     //-----------------------------------------------------------------------
     // Get amount of free space in the command queue
     //
@@ -1648,7 +1650,7 @@ protected:
         return result;
     }
 
-protected:
+public:
     //-----------------------------------------------------------------------
     // Store a co-processor command with no parameters
     //
@@ -1934,7 +1936,7 @@ public:
     // HELPER FUNCTIONS
     /////////////////////////////////////////////////////////////////////////
 
-protected:
+public:
     //-----------------------------------------------------------------------
     // Get pointer to first available byte in RAM_G
     uint32_t                            // Returns pointer in RAM_G
