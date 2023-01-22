@@ -1,7 +1,7 @@
 
 static const StEVE::FORMAT CLOUDS_format = StEVE::FORMAT_RGB565;
 static const int16_t CLOUDS_width  = 320;
-static const int16_t CLOUDS_height = 480;
+static const int16_t CLOUDS_height = 240;
 
 static const uint8_t CLOUDS[153600] = {
 	0x4F, 0x32, 0x4F, 0x32, 0x4F, 0x32, 0x4F, 0x32, 0x4F, 0x32, 0x4F, 0x32,

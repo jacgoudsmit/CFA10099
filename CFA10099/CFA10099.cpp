@@ -222,7 +222,7 @@ void setup()
     DBG_STAT("Begin\n");
     steve.Begin();
 
-    bmpDemo.Init(0, CLOUDS, sizeof(CLOUDS), CLOUDS_width, CLOUDS_height, StEVE::FORMAT_RGB565, 1, -1);
+    bmpDemo.Init(0, CLOUDS, sizeof(CLOUDS), CLOUDS_width, CLOUDS_height, StEVE::FORMAT_RGB565, 1, -1, -1);
     bounceDemo.Init();
 
     DBG_STAT("End Setup\n");

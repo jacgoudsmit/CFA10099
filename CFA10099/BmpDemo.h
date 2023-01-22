@@ -32,15 +32,15 @@ public:
     // This should be called from the setup() function
     uint32_t                            // Returns updated RAM_G address
     Init(
-        uint32_t RAMGStartAddress,
-        const uint8_t *bitmap,
-        uint32_t bitmapsize,
-        int16_t width,
-        int16_t height,
-        StEVE::FORMAT format = StEVE::FORMAT_RGB565,
-        uint32_t framesperstep = 3,
-        int16_t xstep = 1,
-        int16_t ystep = 0)
+        uint32_t RAMGStartAddress,      // Start address in RAM_G
+        const uint8_t *bitmap,          // Bitmap data to load
+        uint32_t bitmapsize,            // Size of data in bytes
+        int16_t width,                  // Width of bitmap
+        int16_t height,                 // Height of bitmap
+        StEVE::FORMAT format = StEVE::FORMAT_RGB565, // Bitmap format
+        uint32_t framesperstep = 3,     // Number of frames to wait for step
+        int16_t xstep = 1,              // Horizontal step (<=width)
+        int16_t ystep = 0)              // Vertical step (<=height)
     {
         _RAMGStartAddress = RAMGStartAddress;
         _format = format;
