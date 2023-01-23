@@ -156,57 +156,31 @@ void SerPrintFF(const __FlashStringHelper *fmt, ...);
 #include "BounceDemo.h"
 #include "BmpDemo.h"
 
-StEVE::DisplayProfile cfa480128profile =
-{
-#define LCD_SWIZZLE      (0x0)
-#define LCD_PCLKPOL      (1)
-#define LCD_DRIVE_10MA   (0)
-#define LCD_PCLK_CSPREAD (0)
-#define LCD_DITHER       (0)
-#define LCD_PCLK         (7)
-#define HPX   (480)    // Horizontal Pixel Width
-#define HSW   (11)     // Horizontal Sync Width (1~40)
-#define HBP   (6)      // Horizontal Back Porch (must be 46, includes HSW)
-#define HFP   (24)     // Horizontal Front Porch (16~210~354)
-#define HPP   (521)    // Horizontal Pixel Padding (tot=863: 862~1056~1200)
-#define LCD_WIDTH   (HPX)
-#define LCD_HSYNC0  (HFP)
-#define LCD_HSYNC1  (HFP+HSW)
-#define LCD_HOFFSET (HFP+HSW+HBP)
-#define LCD_HCYCLE  (HPX+HFP+HSW+HBP+HPP)
-#define VLH   (128)    // Vertical Line Height
-#define VS    (1)      // Vertical Sync (in lines)  (1~20)
-#define VBP   (3)      // Vertical Back Porch (must be 23, includes VS)
-#define VFP   (4)      // Vertical Front Porch (7~22~147)
-#define VLP   (1)      // Vertical Line Padding (tot=511: 510~525~650)
-#define LCD_HEIGHT  (VLH)
-#define LCD_VSYNC0  (VFP)
-#define LCD_VSYNC1  (VFP+VS)
-#define LCD_VOFFSET (VFP+VS+VBP)
-#define LCD_VCYCLE  (VLH+VFP+VS+VBP+VLP)
-
-    ._clock     = StEVE::CLOCK::CLOCK_INT,
-    ._chipid    = StEVE::CHIPID::ANY,
-    ._frequency = 0,           // ClockFreq to store; 0 = don't store
-    ._lcd10ma   = 0,           // True=drive LCD with 10mA (false=5)
-    ._cspread   = 0,           // True=enable RGB clock spreading, see datasheet 4.4 p.27
-    ._dither    = 0,           // True=enable dither, see datasheet 4.4 p.27
-    ._outbits   = 0,           // 3x3 bits indicating num LCD bits used, see datasheet 4.4 p.27
-    ._hsize     = LCD_WIDTH,   // active display width
-    ._hcycle    = LCD_HCYCLE,  // total number of clocks per line, incl front/back porch
-    ._hoffset   = LCD_HOFFSET, // start of active line
-    ._hsync0    = LCD_HSYNC0,  // start of horizontal sync pulse
-    ._hsync1    = LCD_HSYNC1,  // end of horizontal sync pulse
-    ._vsize     = LCD_HEIGHT,  // active display height
-    ._vcycle    = LCD_VCYCLE,  // total number of lines per screen, incl pre/post
-    ._voffset   = LCD_VOFFSET, // start of active screen
-    ._vsync0    = LCD_VSYNC0,  // start of vertical sync pulse
-    ._vsync1    = LCD_VSYNC1,  // end of vertical sync pulse
-    ._swizzle   = LCD_SWIZZLE, // FT800 output to LCD - pin order
-    ._pclkpol   = LCD_PCLKPOL, // LCD data is clocked in on this PCLK edge
-    ._pclk      = LCD_PCLK,    // Clock divisor
-};
-
+//---------------------------------------------------------------------------
+// Typical timing parameters for the CFA480128 displays.
+//
+// Using the internal clock generator, the EVE chip runs at 60MHz internally.
+// With a divisor of 7, this results in a pixel clock running at ~8.57 MHz;
+// one pixel clock cycle is 116.67 ns.
+//
+// We use hcycle=480+24+11+6+521=1042 and vcycle=128+4+1+3+1=137. This
+// results in a total number of 142754 cycles per frame, which corresponds
+// to ~0.0167 seconds per frame, corresponding to 60.043 frames per second.
+//
+// NOTE: The parameters set up an amount of horizontal padding that's
+// just as long as the data (in other words: the line frequency is
+// halved by the padding). It's possible to change the horizontal padding
+// parameter from 521 to 0 to achieve 120 fps on this display.
+//
+// The vertical padding parameter must be at least 1 or no video will be
+// shown.
+StEVE::DisplayProfile cfa480128profile(
+    480, 128,   // Width, height
+    24, 11, 6,  // Horizontal front porch, sync width, back porch
+    4, 1, 3,    // Vertical   front porch, sync width, back porch
+    521,        // Extra horizontal clocks per line
+    1,          // Extra lines per frame)
+    7);         // Pixel clock is 60MHz / 7 = ~8.57 MHz
 StEVE steve(cfa480128profile, SPI, 8000000, 9, 8, 7);
 
 BounceDemo bounceDemo(steve);

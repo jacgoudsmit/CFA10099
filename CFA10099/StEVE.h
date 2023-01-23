@@ -15,7 +15,7 @@ display size.
 #include <SPI.h>
 
 // Uncomment this to show detailed data about what the code does
-#define DBG_TRAFFIC(...) DBG_STAT(__VA_ARGS__)
+#define DBG_TRAFFIC(...) //DBG_STAT(__VA_ARGS__)
 
 #ifndef STRINGIZE
 #define _STRINGIZE(x) #x
@@ -123,16 +123,17 @@ public:
     // Memory locations
 
     // Memory map, see datasheet section 5 p.40
-    const static uint32_t RAM_CMD               = 0x00308000;
+    // NOTE: Addresses are 22 bits.
+    const static uint32_t RAM_CMD               = 0x308000;
     const static uint32_t RAM_CMD_SIZE          = 4*1024;
-    const static uint32_t RAM_DL                = 0x00300000;
+    const static uint32_t RAM_DL                = 0x300000;
     const static uint32_t RAM_DL_SIZE           = 8*1024;
-    const static uint32_t RAM_G                 = 0x00000000;
+    const static uint32_t RAM_G                 = 0x000000;
     const static uint32_t RAM_G_SIZE            = 1024*1024;
-    const static uint32_t RAM_REG               = 0x00302000;
-    const static uint32_t RAM_ROMSUB            = 0x0030A000;
-    const static uint32_t ROM_FONT              = 0x001E0000;
-    const static uint32_t ROMFONT_TABLEADDRESS  = 0x002FFFFC;
+    const static uint32_t RAM_REG               = 0x302000;
+    const static uint32_t RAM_ROMSUB            = 0x30A000;
+    const static uint32_t ROM_FONT              = 0x1E0000;
+    const static uint32_t ROMFONT_TABLEADDRESS  = 0x2FFFFC;
 
     typedef Index<RAM_CMD_SIZE> CmdIndex;
     typedef Index<RAM_DL_SIZE> DLIndex;
@@ -587,14 +588,14 @@ public:
     enum CHIPID
     {
         // Use this value in the init parameters to skip chip ID checking
-        ANY                         = 0,
+        CHIPID_ANY                  = 0,
 
         // Following are values in the chip ID register just after the
         // processor has been started.
-        FT810                       = 0x00011008,
-        FT811                       = 0x00011108,
-        FT812                       = 0x00011208,
-        FT813                       = 0x00011308,
+        CHIPID_FT810                = 0x00011008,
+        CHIPID_FT811                = 0x00011108,
+        CHIPID_FT812                = 0x00011208,
+        CHIPID_FT813                = 0x00011308,
     };
 
     // This struct is used to describe the hardware parameters for a 
@@ -609,7 +610,6 @@ public:
         bool        _dither;            // True=enable dither, see datasheet 4.4 p.27
         uint16_t    _outbits;           // 3x3 bits indicating num LCD bits used, see datasheet 4.4 p.27
 
-        // TODO: Add a constructor that automatically calculates some of these
         uint16_t    _hsize;             // active display width
         uint16_t    _hcycle;            // total number of clocks per line, incl front/back porch
         uint16_t    _hoffset;           // start of active line
@@ -623,6 +623,50 @@ public:
         uint8_t     _swizzle;           // FT800 output to LCD - pin order
         uint8_t     _pclkpol;           // LCD data is clocked in on this PCLK edge
         uint8_t     _pclk;              // Clock divisor
+
+    public:
+        //-------------------------------------------------------------------
+        // Constructor
+        //
+        // This generates some of the timing values based on the given
+        // parameters. 
+        DisplayProfile(
+            uint16_t width,             // Horizontal number of pixels
+            uint16_t height,            // Vertical number of pixels
+            uint16_t hfrontporch,       // Num clocks from display to sync
+            uint16_t hsyncwidth,        // Number of clocks in hsync
+            uint16_t hbackporch,        // Num clocks from hsync to display
+            uint16_t vfrontporch,       // Num lines from display to vsync
+            uint16_t vsyncheight,       // Number of lines in vsync
+            uint16_t vbackporch,        // Num lines from vsync to display
+            uint16_t hpadding,          // Num additional clocks per line
+            uint16_t vpadding,          // Num additional lines per frame
+            uint8_t pclk,               // Clock divisor
+            uint8_t pclkpol = 1,        // Clock policy
+            uint8_t swizzle = 0)        // Pin order
+        : _clock(CLOCK_INT)
+        , _chipid(CHIPID_ANY)
+        , _frequency(0)
+        , _lcd10ma(false)
+        , _cspread(false)
+        , _dither(false)
+        , _outbits(0)
+        , _hsize(width)
+        , _hcycle(hfrontporch + hsyncwidth + hbackporch + width + hpadding)
+        , _hoffset(hfrontporch + hsyncwidth + hbackporch)
+        , _hsync0(hfrontporch)
+        , _hsync1(hfrontporch + hsyncwidth)
+        , _vsize(height)
+        , _vcycle(vfrontporch + vsyncheight + vbackporch + height + vpadding)
+        , _voffset(vfrontporch + vsyncheight + vbackporch)
+        , _vsync0(vfrontporch)
+        , _vsync1(vfrontporch + vsyncheight)
+        , _swizzle(swizzle)
+        , _pclkpol(pclkpol)
+        , _pclk(pclk)
+        {
+            // Nothing
+        }
     };
 
 protected:
@@ -673,6 +717,8 @@ public:
         , _pin_int(pin_int)
         , _hcenter(profile._hsize / 2)
         , _vcenter(profile._vsize / 2)
+        , _cmd_index()
+        , _dl_index()
     {
         // Set the output pins before switching the pins to output, to
         // avoid glitches
@@ -868,7 +914,7 @@ public:
         }
 
         // Read the chip ID and match it with the expected value
-        if (_profile._chipid != ANY)
+        if (_profile._chipid != CHIPID_ANY)
         {
             uint32_t chip_id = RegRead32(REG_CHIP_ID);
             if (_profile._chipid != (CHIPID)chip_id)
