@@ -1,5 +1,4 @@
-
-static const StEVE::FORMAT CLOUDS_format = StEVE::FORMAT_RGB565;
+static const Steve::FORMAT CLOUDS_format = Steve::FORMAT_RGB565;
 static const int16_t CLOUDS_width  = 320;
 static const int16_t CLOUDS_height = 240;
 

@@ -93,29 +93,13 @@
 //===========================================================================
 
 // Runtime library
-#include <stdarg.h>
+//#include <stdarg.h>
 
 // Arduino framework
 #include <Arduino.h>
-#include <SPI.h>
+//#include <SPI.h>
 
-//#include "StEVE.h"
-
-/****************************************************************************
-StEVE.h
-
-The StEVE class (Static EVE) implements the FT81X interface as a C++ class,
-in such a way that various display types can all be handled with the same
-code, without resorting too much to preprocessor dependencies. So for
-example, this doesn't require you to use #define to set parameters such as
-display size.
-
-****************************************************************************/
-
-#include <stdarg.h>
-
-#include <Arduino.h>
-#include <SPI.h>
+//#include "Steve.h"
 
 void SerPrintFF(const __FlashStringHelper *fmt, ...);
 // {
@@ -132,29 +116,32 @@ void SerPrintFF(const __FlashStringHelper *fmt, ...);
 //#define DBG_GEEK(fmt, ...) SerPrintFF(F(fmt ""), ##__VA_ARGS__)
 
 // Definitions for our display.
-#include "CFA10099_defines.h"
-#include "CFA480128Ex_039Tx.h"
+//#include "CFA10099_defines.h"
+//#include "CFA480128Ex_039Tx.h"
 // Transparent Rotating Logo for this display
-#include "CFA480128Ex_039Tx_Splash_PNG.h"
-#include "CFA480128Ex_039Tx_Splash_ARGB2.h"
+//#include "CFA480128Ex_039Tx_Splash_PNG.h"
+//#include "CFA480128Ex_039Tx_Splash_ARGB2.h"
 
 #if BUILD_SD
 #include <SD.h>
 #endif
 
 // The very simple EVE library files
-#include "EVE_defines.h"
-#include "EVE_base.h"
-#include "EVE_draw.h"
+//#include "EVE_defines.h"
+//#include "EVE_base.h"
+//#include "EVE_draw.h"
 
 // Our demonstrations of various EVE functions
-#include "demos.h"
+//#include "demos.h"
 
-#include "StEVE.h"
-#include "CLOUDS.h"
+#include "Steve.h"
 
+#include "VUDemo.h"
 #include "BounceDemo.h"
 #include "BmpDemo.h"
+
+#include "CLOUDS.h"
+
 
 //---------------------------------------------------------------------------
 // Typical timing parameters for the CFA480128 displays.
@@ -174,56 +161,62 @@ void SerPrintFF(const __FlashStringHelper *fmt, ...);
 //
 // The vertical padding parameter must be at least 1 or no video will be
 // shown.
-StEVE::DisplayProfile cfa480128profile(
-    480, 128,   // Width, height
-    24, 11, 6,  // Horizontal front porch, sync width, back porch
-    4, 1, 3,    // Vertical   front porch, sync width, back porch
-    521,        // Extra horizontal clocks per line
-    1,          // Extra lines per frame)
-    7);         // Pixel clock is 60MHz / 7 = ~8.57 MHz
-StEVE steve(cfa480128profile, SPI, 8000000, 9, 8, 7);
+Steve::DisplayProfile cfa480128profile(
+  480, 128,   // Width, height
+  24, 11, 6,  // Horizontal front porch, sync width, back porch
+  4, 1, 3,    // Vertical   front porch, sync width, back porch
+  521,        // Extra horizontal clocks per line
+  1,          // Extra lines per frame)
+  7);         // Pixel clock is 60MHz / 7 = ~8.57 MHz
+SteveHAL_Arduino Hal(SPI, 8000000, 9, 8, 7);
+Steve d(cfa480128profile, Hal);
 
-BounceDemo bounceDemo(steve);
-BmpDemo bmpDemo(steve);
+VUDemo vuDemo(d);
+BounceDemo bounceDemo(d);
+BmpDemo bmpDemo(d);
 
 void setup()
 {
-    Serial.begin(115200);
-    DBG_STAT("Running\n");
+  Serial.begin(115200);
+  DBG_STAT("Running\n");
 
-    SPI.begin();
+  SPI.begin();
 
-    DBG_STAT("Begin\n");
-    steve.Begin();
+  DBG_STAT("Begin\n");
+  d.Begin();
 
-    bmpDemo.Init(0, CLOUDS, sizeof(CLOUDS), CLOUDS_width, CLOUDS_height, StEVE::FORMAT_RGB565, 1, -1, -1);
-    bounceDemo.Init();
+  uint32_t ramaddr = Steve::RAM_G;
+  ramaddr = bmpDemo.Init(ramaddr, CLOUDS, sizeof(CLOUDS), CLOUDS_width, CLOUDS_height, Steve::FORMAT_RGB565, 1, -1, -1);
+  ramaddr = vuDemo.Init(1, ramaddr, vu, sizeof(vu), 480, 40, Steve::FORMAT_RGB565, 1);
+  bounceDemo.Init();
 
-    DBG_STAT("End Setup\n");
+  DBG_STAT("End Setup\n");
 
-//     steve.CmdStartSpinner(steve.RGB(0, 0, 0), steve.RGB(255, 255, 255), steve.RGB(255, 0, 255), F("STEVE!"));
-//     delay(5000);
-//     steve.CmdStopSpinner(steve.RGB(255, 255, 255), steve.RGB(255, 255, 255), F("BOB"));
+  //     d.CmdStartSpinner(d.RGB(0, 0, 0), d.RGB(255, 255, 255), d.RGB(255, 0, 255), F("Steve!"));
+  //     delay(5000);
+  //     d.CmdStopSpinner(d.RGB(255, 255, 255), d.RGB(255, 255, 255), F("BOB"));
 }
 
 void loop()
 {
-    steve.CmdWaitComplete();
+  d.CmdWaitComplete();
 
-    // Start the command list
-    steve.cmd_DLSTART();
+  // Start the command list
+  d.cmd_DLSTART();
 
-    // Clear the screen (and clear the current color, stencil and tag)
-    steve.CmdClear(0, 0, 0);
+  // Clear the screen (and clear the current color, stencil and tag)
+  d.CmdClear(0, 0, 0);
 
-    bmpDemo.AddCommands();
-    bounceDemo.AddCommands();
+  bmpDemo.AddCommands();
+  bounceDemo.AddCommands();
+  vuDemo.AddCommands();
 
-    bmpDemo.Cycle();
-    bounceDemo.Cycle();
+  vuDemo.Cycle();
+  bmpDemo.Cycle();
+  bounceDemo.Cycle();
 
-    // Instruct graphics processor to show the list
-    steve.CmdDlFinish();
+  // Instruct graphics processor to show the list
+  d.CmdDlFinish();
 }
 
 
@@ -265,332 +258,332 @@ void loop()
 //===========================================================================
 void setup()
 {
-    #if (DEBUG_LEVEL != DEBUG_NONE)
-    // Initialize UART for debugging messages
-    Serial.begin(115200);
-    #endif // (DEBUG_LEVEL != DEBUG_NONE)
-    DBG_STAT("Begin\n");
+#if (DEBUG_LEVEL != DEBUG_NONE)
+  // Initialize UART for debugging messages
+  Serial.begin(115200);
+#endif // (DEBUG_LEVEL != DEBUG_NONE)
+  DBG_STAT("Begin\n");
 
-    //Initialize GPIO port states
-    // Set CS# high to start - SPI inactive
-    SET_EVE_CS_NOT;
-    // Set PD# high to start
-    SET_EVE_PD_NOT;
-    SET_SD_CS_NOT;
+  //Initialize GPIO port states
+  // Set CS# high to start - SPI inactive
+  SET_EVE_CS_NOT;
+  // Set PD# high to start
+  SET_EVE_PD_NOT;
+  SET_SD_CS_NOT;
 
-    //Initialize port directions
-    // EVE interrupt output (not used in this example)
-    pinMode(EVE_INT, INPUT_PULLUP);
-    // EVE Power Down (reset) input
-    pinMode(EVE_PD_NOT, OUTPUT);
-    // EVE SPI bus CS# input
-    pinMode(EVE_CS_NOT, OUTPUT);
-    // USD card CS
-    pinMode(SD_CS, OUTPUT);
-    // Optional pin used for LED or oscilloscope debugging.
-    pinMode(DEBUG_LED, OUTPUT);
+  //Initialize port directions
+  // EVE interrupt output (not used in this example)
+  pinMode(EVE_INT, INPUT_PULLUP);
+  // EVE Power Down (reset) input
+  pinMode(EVE_PD_NOT, OUTPUT);
+  // EVE SPI bus CS# input
+  pinMode(EVE_CS_NOT, OUTPUT);
+  // USD card CS
+  pinMode(SD_CS, OUTPUT);
+  // Optional pin used for LED or oscilloscope debugging.
+  pinMode(DEBUG_LED, OUTPUT);
 
-    // Initialize SPI
-    SPI.begin();
-    //Bump the clock to 8MHz. Appears to be the maximum for AVR
+  // Initialize SPI
+  SPI.begin();
+  //Bump the clock to 8MHz. Appears to be the maximum for AVR
+  SPI.beginTransaction(SPISettings(8000000, MSBFIRST, SPI_MODE0));
+  DBG_GEEK("SPI initialzed to: 8MHz\n");
+
+#if BUILD_SD
+  // The prototype hardware appears to function fine at 8MHz which
+  // also appears to be the max that the ATmega328P can do.
+  if (!SD.begin(8000000, SD_CS))
+  {
+    DBG_STAT("uSD card failed to initialize, or not present\n");
+    //Reset the SPI clock to fast. SD card library does not clean up well.
+    //Bump the clock to 8MHz. Appears to be the maximum.
     SPI.beginTransaction(SPISettings(8000000, MSBFIRST, SPI_MODE0));
-    DBG_GEEK("SPI initialzed to: 8MHz\n");
+  }
+  else
+  {
+    DBG_STAT("uSD card initialized.\n");
+  }
+#endif
 
-    #if BUILD_SD
-    // The prototype hardware appears to function fine at 8MHz which
-    // also appears to be the max that the ATmega328P can do.
-    if (!SD.begin(8000000, SD_CS))
-    {
-        DBG_STAT("uSD card failed to initialize, or not present\n");
-        //Reset the SPI clock to fast. SD card library does not clean up well.
-        //Bump the clock to 8MHz. Appears to be the maximum.
-        SPI.beginTransaction(SPISettings(8000000, MSBFIRST, SPI_MODE0));
-    }
-    else
-    {
-        DBG_STAT("uSD card initialized.\n");
-    }
-    #endif
+  //See if we can find the FTDI/BridgeTek EVE processor
+  if (0 != EVE_Initialize())
+  {
+    DBG_STAT("Failed to initialize %s8%02X. Stopping.\n", EVE_DEVICE < 0x14 ? "FT" : "BT", EVE_DEVICE);
+    while (1);
+  }
+  else
+  {
+    DBG_STAT("%s8%02X initialized.\n", EVE_DEVICE < 0x14 ? "FT" : "BT", EVE_DEVICE);
+  }
 
-    //See if we can find the FTDI/BridgeTek EVE processor
-    if(0 != EVE_Initialize())
-    {
-        DBG_STAT("Failed to initialize %s8%02X. Stopping.\n",EVE_DEVICE<0x14?"FT":"BT",EVE_DEVICE);
-        while(1);
-    }
-    else
-    {
-        DBG_STAT("%s8%02X initialized.\n",EVE_DEVICE<0x14?"FT":"BT",EVE_DEVICE);
-    }
+  //Get the current write pointer from the EVE
+  uint16_t FWo = EVE_REG_Read_16(EVE_REG_CMD_WRITE);
+  DBG_GEEK("Initial Offset Read: 0x%04X = %u\n", FWo, FWo);
 
-    //Get the current write pointer from the EVE
-    uint16_t FWo = EVE_REG_Read_16(EVE_REG_CMD_WRITE);
-    DBG_GEEK("Initial Offset Read: 0x%04X = %u\n",FWo ,FWo);
-
-    //Keep track of the RAM_G memory allocation
-    uint32_t
+  //Keep track of the RAM_G memory allocation
+  uint32_t
     RAM_G_Unused_Start;
-    RAM_G_Unused_Start=0;
-    DBG_GEEK("Initial RAM_G: 0x%08lX = %lu\n",RAM_G_Unused_Start,RAM_G_Unused_Start);
+  RAM_G_Unused_Start = 0;
+  DBG_GEEK("Initial RAM_G: 0x%08lX = %lu\n", RAM_G_Unused_Start, RAM_G_Unused_Start);
 
-    #if (0 != BOUNCE_DEMO)
-    DBG_STAT("Initialize_Bounce_Demo() . . .");
-    Initialize_Bounce_Demo();
-    DBG_STAT(" done.\n");
-    #endif // (0 != BOUNCE_DEMO)
+#if (0 != BOUNCE_DEMO)
+  DBG_STAT("Initialize_Bounce_Demo() . . .");
+  Initialize_Bounce_Demo();
+  DBG_STAT(" done.\n");
+#endif // (0 != BOUNCE_DEMO)
 
-    #if (0 != LOGO_DEMO)
-    DBG_STAT("Initialize_Logo_Demo() . . .");
-    FWo=Initialize_Logo_Demo(FWo,&RAM_G_Unused_Start);
-    DBG_STAT("  done.\n");
-    DBG_GEEK("RAM_G after logo: 0x%08lX = %lu\n",RAM_G_Unused_Start,RAM_G_Unused_Start);
-    #endif // (0 != LOGO_DEMO)
+#if (0 != LOGO_DEMO)
+  DBG_STAT("Initialize_Logo_Demo() . . .");
+  FWo = Initialize_Logo_Demo(FWo, &RAM_G_Unused_Start);
+  DBG_STAT("  done.\n");
+  DBG_GEEK("RAM_G after logo: 0x%08lX = %lu\n", RAM_G_Unused_Start, RAM_G_Unused_Start);
+#endif // (0 != LOGO_DEMO)
 
-    #if (0 != BMP_DEMO)
-    DBG_STAT("Initialize_Bitmap_Demo() . . .");
-    FWo=Initialize_Bitmap_Demo(FWo,&RAM_G_Unused_Start);
-    DBG_STAT("  done.\n");
-    DBG_GEEK("RAM_G after bitmap: 0x%08lX = %lu\n",RAM_G_Unused_Start,RAM_G_Unused_Start);
-    #endif //(0 != BMP_DEMO)
+#if (0 != BMP_DEMO)
+  DBG_STAT("Initialize_Bitmap_Demo() . . .");
+  FWo = Initialize_Bitmap_Demo(FWo, &RAM_G_Unused_Start);
+  DBG_STAT("  done.\n");
+  DBG_GEEK("RAM_G after bitmap: 0x%08lX = %lu\n", RAM_G_Unused_Start, RAM_G_Unused_Start);
+#endif //(0 != BMP_DEMO)
 
-    #if (0 != SOUND_DEMO)
-    DBG_STAT("Initialize_Sound_Demo() . . .");
-    FWo=Initialize_Sound_Demo(FWo,&RAM_G_Unused_Start);
-    DBG_STAT("  done.\n");
-    DBG_GEEK("RAM_G after sound: 0x%08lX = %lu\n",RAM_G_Unused_Start,RAM_G_Unused_Start);
-    #endif // (0 != SOUND_DEMO)
+#if (0 != SOUND_DEMO)
+  DBG_STAT("Initialize_Sound_Demo() . . .");
+  FWo = Initialize_Sound_Demo(FWo, &RAM_G_Unused_Start);
+  DBG_STAT("  done.\n");
+  DBG_GEEK("RAM_G after sound: 0x%08lX = %lu\n", RAM_G_Unused_Start, RAM_G_Unused_Start);
+#endif // (0 != SOUND_DEMO)
 
-    #if (0 != MARBLE_DEMO)
-    DBG_STAT("Initialize_Marble_Demo() . . .");
-    FWo=Initialize_Marble_Demo(FWo,&RAM_G_Unused_Start);
-    DBG_STAT("  done.\n");
-    DBG_GEEK("RAM_G after marble: 0x%08lX = %lu\n",RAM_G_Unused_Start,RAM_G_Unused_Start);
-    #endif //MARBLE_DEMO
+#if (0 != MARBLE_DEMO)
+  DBG_STAT("Initialize_Marble_Demo() . . .");
+  FWo = Initialize_Marble_Demo(FWo, &RAM_G_Unused_Start);
+  DBG_STAT("  done.\n");
+  DBG_GEEK("RAM_G after marble: 0x%08lX = %lu\n", RAM_G_Unused_Start, RAM_G_Unused_Start);
+#endif //MARBLE_DEMO
 
-    DBG_STAT("Initialization complete, entering main loop.\n");
+  DBG_STAT("Initialization complete, entering main loop.\n");
 } //  setup()
 
 //===========================================================================
 void loop()
 {
-    uint16_t FWo = EVE_REG_Read_16(EVE_REG_CMD_WRITE);
-    //DBG_GEEK("Initial Offset Read: 0x%04X = %u\n",FWo ,FWo);
+  uint16_t FWo = EVE_REG_Read_16(EVE_REG_CMD_WRITE);
+  //DBG_GEEK("Initial Offset Read: 0x%04X = %u\n",FWo ,FWo);
 
-    //========== FRAME SYNCHRONIZING ==========
-    // Wait for graphics processor to complete executing the current command
-    // list. This happens when EVE_REG_CMD_READ matches EVE_REG_CMD_WRITE, indicating
-    // that all commands have been executed.  We have a local copy of
-    // EVE_REG_CMD_WRITE in FWo.
-    //
-    // This appears to only occur on frame completion, which is nice since it
-    // allows us to step the animation along at a reasonable rate.
-    //
-    // If possible, I have tweaked the timing on the Crystalfontz displays
-    // to all have ~60Hz frame rate.
-    FWo=Wait_for_EVE_Execution_Complete(FWo);
+  //========== FRAME SYNCHRONIZING ==========
+  // Wait for graphics processor to complete executing the current command
+  // list. This happens when EVE_REG_CMD_READ matches EVE_REG_CMD_WRITE, indicating
+  // that all commands have been executed.  We have a local copy of
+  // EVE_REG_CMD_WRITE in FWo.
+  //
+  // This appears to only occur on frame completion, which is nice since it
+  // allows us to step the animation along at a reasonable rate.
+  //
+  // If possible, I have tweaked the timing on the Crystalfontz displays
+  // to all have ~60Hz frame rate.
+  FWo = Wait_for_EVE_Execution_Complete(FWo);
 
-    #if (0 != TOUCH_DEMO)
-    #if (EVE_TOUCH_TYPE == EVE_TOUCH_RESISTIVE)
-    DBG_GEEK("Resistive touch, single point.\n");
-    int16_t
+#if (0 != TOUCH_DEMO)
+#if (EVE_TOUCH_TYPE == EVE_TOUCH_RESISTIVE)
+  DBG_GEEK("Resistive touch, single point.\n");
+  int16_t
     x_points[1];
-    int16_t
+  int16_t
     y_points[1];
-    #endif // (EVE_TOUCH_TYPE == EVE_TOUCH_RESISTIVE)
+#endif // (EVE_TOUCH_TYPE == EVE_TOUCH_RESISTIVE)
 
-    #if (EVE_TOUCH_TYPE == EVE_TOUCH_CAPACITIVE)
-    DBG_GEEK("Capacitive touch, multiple points.\n");
-    int16_t
+#if (EVE_TOUCH_TYPE == EVE_TOUCH_CAPACITIVE)
+  DBG_GEEK("Capacitive touch, multiple points.\n");
+  int16_t
     x_points[5];
-    int16_t
+  int16_t
     y_points[5];
-    #endif // (EVE_TOUCH_TYPE == EVE_TOUCH_CAPACITIVE)
+#endif // (EVE_TOUCH_TYPE == EVE_TOUCH_CAPACITIVE)
 
-    //Read the touch screen.
-    //Bitmask of valid points in the array
-    uint8_t points_touched_mask=Read_Touch(x_points,y_points);
-    #endif // TOUCH_DEMO
+  //Read the touch screen.
+  //Bitmask of valid points in the array
+  uint8_t points_touched_mask = Read_Touch(x_points, y_points);
+#endif // TOUCH_DEMO
 
-    #if SOUND_DEMO
-    //See if we should play a sound. The sound will synchronize
-    //with the the start of the logo rotation.
-    //If the previous sound is still playing it will wait until the
-    //next time we call it.
-    Start_Sound_Demo_Playing();
-    #endif //SOUND_DEMO
+#if SOUND_DEMO
+  //See if we should play a sound. The sound will synchronize
+  //with the the start of the logo rotation.
+  //If the previous sound is still playing it will wait until the
+  //next time we call it.
+  Start_Sound_Demo_Playing();
+#endif //SOUND_DEMO
 
-    //========== START THE DISPLAY LIST ==========
-    // Start the display list
-    FWo=EVE_Cmd_Dat_0(FWo,
+  //========== START THE DISPLAY LIST ==========
+  // Start the display list
+  FWo = EVE_Cmd_Dat_0(FWo,
     (EVE_ENC_CMD_DLSTART));
-        
-    // Set the default clear color to black
-    FWo=EVE_Cmd_Dat_0(FWo,
-    EVE_ENC_CLEAR_COLOR_RGB(0,0,0));
-    // Clear the screen - this and the previous prevent artifacts between lists
-    FWo=EVE_Cmd_Dat_0(FWo,
-    EVE_ENC_CLEAR(1 /*CLR_COL*/,1 /*CLR_STN*/,1 /*CLR_TAG*/));
 
-    //========== ADD GRAPHIC ITEMS TO THE DISPLAY LIST ==========
-    //Fill background with white
-    FWo=EVE_Filled_Rectangle(FWo,
-    0,0,LCD_WIDTH-1,LCD_HEIGHT-1);
-    #if (0 != BMP_DEMO)
-    FWo=Add_Bitmap_To_Display_List(FWo);
-    #endif // BMP_DEMO
+  // Set the default clear color to black
+  FWo = EVE_Cmd_Dat_0(FWo,
+    EVE_ENC_CLEAR_COLOR_RGB(0, 0, 0));
+  // Clear the screen - this and the previous prevent artifacts between lists
+  FWo = EVE_Cmd_Dat_0(FWo,
+    EVE_ENC_CLEAR(1 /*CLR_COL*/, 1 /*CLR_STN*/, 1 /*CLR_TAG*/));
 
-    #if (0 != TOUCH_DEMO)
-    //See if we are touched at all.
-    if(0 != points_touched_mask)
+  //========== ADD GRAPHIC ITEMS TO THE DISPLAY LIST ==========
+  //Fill background with white
+  FWo = EVE_Filled_Rectangle(FWo,
+    0, 0, LCD_WIDTH - 1, LCD_HEIGHT - 1);
+#if (0 != BMP_DEMO)
+  FWo = Add_Bitmap_To_Display_List(FWo);
+#endif // BMP_DEMO
+
+#if (0 != TOUCH_DEMO)
+  //See if we are touched at all.
+  if (0 != points_touched_mask)
+  {
+    //Loop through the possible touch points
+    uint8_t
+      mask;
+    mask = 0x01;
+    for (uint8_t i = 0; i < 5; i++)
     {
-        //Loop through the possible touch points
-        uint8_t
-        mask;
-        mask=0x01;
-        for(uint8_t i=0;i<5;i++)
+      if (0 != (points_touched_mask & mask))
+      {
+        //This code loops through all the points touched
+        static uint32_t colors[5] =
         {
-            if(0 != (points_touched_mask&mask))
-            {
-                //This code loops through all the points touched
-                static uint32_t colors[5]=
-                {
-                    EVE_ENC_COLOR_RGB(0x00,0x00,0xFF),
-                    EVE_ENC_COLOR_RGB(0x00,0xFF,0x00),
-                    EVE_ENC_COLOR_RGB(0xFF,0x00,0x00),
-                    EVE_ENC_COLOR_RGB(0xFF,0x00,0xFF),
-                    EVE_ENC_COLOR_RGB(0xFF,0xFF,0x00)
-                };
-                #if (0 != MARBLE_DEMO)
-                //If the marble is loaded, use it for the first touch point.
-                if(0 == i)
-                {
-                    Force_Marble_Position(x_points[i]*16,y_points[i]*16);
-                    FWo=Add_Marble_To_Display_List(FWo);
-                    #if (0!=DEBUG_COPROCESSOR_RESET)
-                    //Test code to crash coprocessor ever other time it is called --
-                    //for testing Reset_EVE_Coprocessor()
-                    DBG_STAT("Initialize_Logo_Demo() . . .");
-                    FWo=Initialize_Logo_Demo(FWo,&RAM_G_Unused_Start);
-                    DBG_STAT("  done.\n");
-                    #endif // (0!=DEBUG_COPROCESSOR_RESET)
-                }
-                else
-                {
-                    #endif // (0 != MARBLE_DEMO)
-                    FWo=EVE_Cmd_Dat_0(FWo,
-                    colors[i]);
-                    // Make it solid
-                    FWo=EVE_Cmd_Dat_0(FWo,
-                    EVE_ENC_COLOR_A(0xFF));
-                    // Draw the touch dot -- a 40px point (filled circle)
-                    FWo=EVE_Point(FWo,
-                    x_points[i]*16,
-                    y_points[i]*16,
-                    40*16);
-                    #if (0 != MARBLE_DEMO)
-                }
-                #endif // (0 != MARBLE_DEMO)
-                //Tag the touch point with magenta text to show off EVE_PrintF.
-                FWo=EVE_Cmd_Dat_0(FWo,
-                EVE_ENC_COLOR_RGB(0xFF,0x00,0xFF));
-                //Move the the text out from under the user's finger
-                int16_t
-                xoffset;
-                int16_t
-                yoffset;
-                if(x_points[i] < (LCD_WIDTH/2))
-                {
-                    xoffset=100;
-                }
-                else
-                {
-                    xoffset=-100;
-                }
-                if(y_points[i] < (LCD_HEIGHT/2))
-                {
-                    yoffset=40;
-                }
-                else
-                {
-                    yoffset=-40;
-                }
-                //Put the text into the display list
-                FWo=EVE_PrintF(FWo,
-                x_points[i]+xoffset,
-                y_points[i]+yoffset,
-                27,         //Font
-                EVE_OPT_CENTER, //Options
-                "T[%d]@(%d,%d)",
-                i+1,
-                x_points[i],
-                y_points[i]);
-                    
-            }
-            mask<<=1;
-            #if (0 != MANUAL_BACKLIGHT_DEBUG)
-            //Set the backlight brightness based on the first touch point.
-            if(0 != (0x01 & points_touched_mask))
-            {
-                FWo=Set_Backlight_From_Touch(FWo,x_points[0], LCD_WIDTH);
-            }
-            #endif // (0 != MANUAL_BACKLIGHT_DEBUG)
+            EVE_ENC_COLOR_RGB(0x00,0x00,0xFF),
+            EVE_ENC_COLOR_RGB(0x00,0xFF,0x00),
+            EVE_ENC_COLOR_RGB(0xFF,0x00,0x00),
+            EVE_ENC_COLOR_RGB(0xFF,0x00,0xFF),
+            EVE_ENC_COLOR_RGB(0xFF,0xFF,0x00)
+        };
+#if (0 != MARBLE_DEMO)
+        //If the marble is loaded, use it for the first touch point.
+        if (0 == i)
+        {
+          Force_Marble_Position(x_points[i] * 16, y_points[i] * 16);
+          FWo = Add_Marble_To_Display_List(FWo);
+#if (0!=DEBUG_COPROCESSOR_RESET)
+          //Test code to crash coprocessor ever other time it is called --
+          //for testing Reset_EVE_Coprocessor()
+          DBG_STAT("Initialize_Logo_Demo() . . .");
+          FWo = Initialize_Logo_Demo(FWo, &RAM_G_Unused_Start);
+          DBG_STAT("  done.\n");
+#endif // (0!=DEBUG_COPROCESSOR_RESET)
         }
+        else
+        {
+#endif // (0 != MARBLE_DEMO)
+          FWo = EVE_Cmd_Dat_0(FWo,
+            colors[i]);
+          // Make it solid
+          FWo = EVE_Cmd_Dat_0(FWo,
+            EVE_ENC_COLOR_A(0xFF));
+          // Draw the touch dot -- a 40px point (filled circle)
+          FWo = EVE_Point(FWo,
+            x_points[i] * 16,
+            y_points[i] * 16,
+            40 * 16);
+#if (0 != MARBLE_DEMO)
+        }
+#endif // (0 != MARBLE_DEMO)
+        //Tag the touch point with magenta text to show off EVE_PrintF.
+        FWo = EVE_Cmd_Dat_0(FWo,
+          EVE_ENC_COLOR_RGB(0xFF, 0x00, 0xFF));
+        //Move the the text out from under the user's finger
+        int16_t
+          xoffset;
+        int16_t
+          yoffset;
+        if (x_points[i] < (LCD_WIDTH / 2))
+        {
+          xoffset = 100;
+        }
+        else
+        {
+          xoffset = -100;
+        }
+        if (y_points[i] < (LCD_HEIGHT / 2))
+        {
+          yoffset = 40;
+        }
+        else
+        {
+          yoffset = -40;
+        }
+        //Put the text into the display list
+        FWo = EVE_PrintF(FWo,
+          x_points[i] + xoffset,
+          y_points[i] + yoffset,
+          27,         //Font
+          EVE_OPT_CENTER, //Options
+          "T[%d]@(%d,%d)",
+          i + 1,
+          x_points[i],
+          y_points[i]);
+
+      }
+      mask <<= 1;
+#if (0 != MANUAL_BACKLIGHT_DEBUG)
+      //Set the backlight brightness based on the first touch point.
+      if (0 != (0x01 & points_touched_mask))
+      {
+        FWo = Set_Backlight_From_Touch(FWo, x_points[0], LCD_WIDTH);
+      }
+#endif // (0 != MANUAL_BACKLIGHT_DEBUG)
     }
-    #endif // (0 != TOUCH_DEMO)
+  }
+#endif // (0 != TOUCH_DEMO)
 
-    #if (0 != MARBLE_DEMO)
-    #if (0 != TOUCH_DEMO)
-    //Only show the bouncing marble if no there is no touch
-    if(0 == points_touched_mask)
-    {
-        #endif //(0 != TOUCH_DEMO)
-        FWo=Add_Marble_To_Display_List(FWo);
-        #if (0 != TOUCH_DEMO)
-    }
-    #endif //(0 != TOUCH_DEMO)
-    #endif //(0 != MARBLE_DEMO)
+#if (0 != MARBLE_DEMO)
+#if (0 != TOUCH_DEMO)
+  //Only show the bouncing marble if no there is no touch
+  if (0 == points_touched_mask)
+  {
+#endif //(0 != TOUCH_DEMO)
+    FWo = Add_Marble_To_Display_List(FWo);
+#if (0 != TOUCH_DEMO)
+  }
+#endif //(0 != TOUCH_DEMO)
+#endif //(0 != MARBLE_DEMO)
 
-    #if (0 != BOUNCE_DEMO)
-    //========== BOUNCY BALL $ RUBBER BAND ==========
-    FWo=Add_Bounce_To_Display_List( FWo);
-    #endif //BOUNCE_DEMO
+#if (0 != BOUNCE_DEMO)
+  //========== BOUNCY BALL $ RUBBER BAND ==========
+  FWo = Add_Bounce_To_Display_List(FWo);
+#endif //BOUNCE_DEMO
 
-    #if (0 != LOGO_DEMO)
-    FWo=Add_Logo_To_Display_List(FWo);
-    #endif // (0 != LOGO_DEMO)
+#if (0 != LOGO_DEMO)
+  FWo = Add_Logo_To_Display_List(FWo);
+#endif // (0 != LOGO_DEMO)
 
-    #if (0 != REMOTE_BACKLIGHT_DEBUG)
-    int
+#if (0 != REMOTE_BACKLIGHT_DEBUG)
+  int
     byte_read;
-    if(-1 != (byte_read=Serial.read()))
+  if (-1 != (byte_read = Serial.read()))
+  {
+    DBG_GEEK("Serial Data Read: %3d 0x%02X", byte_read, byte_read);
+    if (byte_read <= 128)
     {
-        DBG_GEEK("Serial Data Read: %3d 0x%02X",byte_read,byte_read);
-        if(byte_read<=128)
-        {
-            EVE_REG_Write_8(EVE_REG_PWM_DUTY,byte_read);
-            DBG_GEEK(", backlight set.");
-        }
-        DBG_GEEK("\n");
+      EVE_REG_Write_8(EVE_REG_PWM_DUTY, byte_read);
+      DBG_GEEK(", backlight set.");
     }
-    #endif // (0 != REMOTE_BACKLIGHT_DEBUG)
+    DBG_GEEK("\n");
+  }
+#endif // (0 != REMOTE_BACKLIGHT_DEBUG)
 
-    //========== FINSH AND SHOW THE DISPLAY LIST ==========
-    // Instruct the graphics processor to show the list
-    FWo=EVE_Cmd_Dat_0(FWo, EVE_ENC_DISPLAY());
-    // Make this list active
-    FWo=EVE_Cmd_Dat_0(FWo, EVE_ENC_CMD_SWAP);
-    // Update the ring buffer pointer so the graphics processor starts executing
-    EVE_REG_Write_16(EVE_REG_CMD_WRITE, (FWo));
+  //========== FINSH AND SHOW THE DISPLAY LIST ==========
+  // Instruct the graphics processor to show the list
+  FWo = EVE_Cmd_Dat_0(FWo, EVE_ENC_DISPLAY());
+  // Make this list active
+  FWo = EVE_Cmd_Dat_0(FWo, EVE_ENC_CMD_SWAP);
+  // Update the ring buffer pointer so the graphics processor starts executing
+  EVE_REG_Write_16(EVE_REG_CMD_WRITE, (FWo));
 
-    #if (0 != BOUNCE_DEMO)
-    //========== MOVE THE BALL AND CYCLE COLOR AND TRANSPARENCY ==========
-    Bounce_Ball();
-    #endif //(0 != BOUNCE_DEMO)
+#if (0 != BOUNCE_DEMO)
+  //========== MOVE THE BALL AND CYCLE COLOR AND TRANSPARENCY ==========
+  Bounce_Ball();
+#endif //(0 != BOUNCE_DEMO)
 
-    #if (0 != MARBLE_DEMO)
-    //========== BOUNCE THE MARBLE AROUND ==========
-    Move_Marble();
-    #endif //(0 != MARBLE_DEMO)
+#if (0 != MARBLE_DEMO)
+  //========== BOUNCE THE MARBLE AROUND ==========
+  Move_Marble();
+#endif //(0 != MARBLE_DEMO)
 } // loop()
 //===========================================================================
 #endif

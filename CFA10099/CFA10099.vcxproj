@@ -1,0 +1,195 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|ARM">
+      <Configuration>Debug</Configuration>
+      <Platform>ARM</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|ARM">
+      <Configuration>Release</Configuration>
+      <Platform>ARM</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|ARM64">
+      <Configuration>Debug</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|ARM64">
+      <Configuration>Release</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <Keyword>Linux</Keyword>
+    <RootNamespace>
+    </RootNamespace>
+    <ProjectName>CFA10099</ProjectName>
+    <MinimumVisualStudioVersion>15.0</MinimumVisualStudioVersion>
+    <ApplicationType>Linux</ApplicationType>
+    <ApplicationTypeRevision>1.0</ApplicationTypeRevision>
+    <TargetLinuxPlatform>Generic</TargetLinuxPlatform>
+    <LinuxProjectType>{D51BCBC9-82E9-4017-911E-C93873C4EA2B}</LinuxProjectType>
+    <ProjectGuid>{3B33072E-DB2F-4BDC-81A8-C00F6F4CD786}</ProjectGuid>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <UseDebugLibraries>true</UseDebugLibraries>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <UseDebugLibraries>false</UseDebugLibraries>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings" />
+  <ImportGroup Label="Shared" />
+  <ImportGroup Label="PropertySheets" />
+  <PropertyGroup Label="UserMacros">
+    <LinuxIncludePath>c:\visualmicro\ignore</LinuxIncludePath>
+    <wiringPiIncludePath>c:\visualmicro\pi-ignore</wiringPiIncludePath>
+    <TargetOSAndVersion>Arduino</TargetOSAndVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <ImportGroup Label="ExtensionTargets" />
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
+    <IncludePath>$(ProjectDir)..\CFA10099;C:\Program Files (x86)\Arduino\hardware\teensy\avr\libraries\SPI;C:\\Program Files (x86)\\Arduino\\hardware\\teensy\\avr\\cores\\teensy4;c:\program files (x86)\arduino\hardware\tools\arm\arm-none-eabi\include\c++\5.4.1;c:\program files (x86)\arduino\hardware\tools\arm\arm-none-eabi\include\c++\5.4.1\arm-none-eabi\armv7e-m\fpu\fpv5-d16;c:\program files (x86)\arduino\hardware\tools\arm\arm-none-eabi\include\c++\5.4.1\backward;c:\program files (x86)\arduino\hardware\tools\arm\lib\gcc\arm-none-eabi\5.4.1\include;c:\program files (x86)\arduino\hardware\tools\arm\lib\gcc\arm-none-eabi\5.4.1\include-fixed;c:\program files (x86)\arduino\hardware\tools\arm\arm-none-eabi\include;C:\Program Files (x86)\Arduino\hardware\teensy\avr\libraries\SPI;C:\Program Files (x86)\Arduino\hardware\teensy\avr\libraries\SD\src</IncludePath>
+    <RemoteCCompileToolExe>C:\\Program Files (x86)\\Arduino\\hardware\\tools\arm\bin\arm-none-eabi-g++</RemoteCCompileToolExe>
+    <RemoteCppCompileToolExe>C:\\Program Files (x86)\\Arduino\\hardware\\tools\arm\bin\arm-none-eabi-g++</RemoteCppCompileToolExe>
+    <ValidateArchitecture>false</ValidateArchitecture>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectCapability Include="VisualMicro" />
+    <ProjectCapability Include="VisualMicroLinux" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="CFA10099.cpp" />
+    <ClCompile Include="CFA10099.ino">
+      <FileType>CppCode</FileType>
+      <DeploymentContent>true</DeploymentContent>
+    </ClCompile>
+    <ClCompile Include="CFA480128Ex_039Tx_Splash_ARGB2.cpp">
+      <DeploymentContent>true</DeploymentContent>
+    </ClCompile>
+    <ClCompile Include="CFA480128Ex_039Tx_Splash_PNG.cpp">
+      <DeploymentContent>true</DeploymentContent>
+    </ClCompile>
+    <ClCompile Include="demos.cpp">
+      <DeploymentContent>true</DeploymentContent>
+    </ClCompile>
+    <ClCompile Include="EVE_base.cpp">
+      <DeploymentContent>true</DeploymentContent>
+    </ClCompile>
+    <ClCompile Include="EVE_draw.cpp">
+      <DeploymentContent>true</DeploymentContent>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="BmpDemo.h">
+      <FileType>CppCode</FileType>
+      <DeploymentContent>true</DeploymentContent>
+    </ClCompile>
+    <ClCompile Include="BounceDemo.h">
+      <FileType>CppCode</FileType>
+      <DeploymentContent>true</DeploymentContent>
+    </ClCompile>
+    <ClCompile Include="CFA10099_defines.h">
+      <FileType>CppCode</FileType>
+      <DeploymentContent>true</DeploymentContent>
+    </ClCompile>
+    <ClCompile Include="CFA480128Ex_039Tx.h">
+      <FileType>CppCode</FileType>
+      <DeploymentContent>true</DeploymentContent>
+    </ClCompile>
+    <ClCompile Include="CFA480128Ex_039Tx_Splash_ARGB2.h">
+      <FileType>CppCode</FileType>
+      <DeploymentContent>true</DeploymentContent>
+    </ClCompile>
+    <ClCompile Include="CFA480128Ex_039Tx_Splash_PNG.h">
+      <FileType>CppCode</FileType>
+      <DeploymentContent>true</DeploymentContent>
+    </ClCompile>
+    <ClCompile Include="CLOUDS.h">
+      <FileType>CppCode</FileType>
+      <DeploymentContent>true</DeploymentContent>
+    </ClCompile>
+    <ClCompile Include="demos.h">
+      <FileType>CppCode</FileType>
+      <DeploymentContent>true</DeploymentContent>
+    </ClCompile>
+    <ClCompile Include="EVE_base.h">
+      <FileType>CppCode</FileType>
+      <DeploymentContent>true</DeploymentContent>
+    </ClCompile>
+    <ClCompile Include="EVE_defines.h">
+      <FileType>CppCode</FileType>
+      <DeploymentContent>true</DeploymentContent>
+    </ClCompile>
+    <ClCompile Include="EVE_draw.h">
+      <FileType>CppCode</FileType>
+      <DeploymentContent>true</DeploymentContent>
+    </ClCompile>
+    <ClCompile Include="Steve.h">
+      <FileType>CppCode</FileType>
+      <DeploymentContent>true</DeploymentContent>
+    </ClCompile>
+    <ClInclude Include="VUDemo.h" />
+    <ClInclude Include="__vm\.CFA10099.vsarduino.h" />
+  </ItemGroup>
+  <PropertyGroup>
+    <DebuggerFlavor>VisualMicroDebugger</DebuggerFlavor>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
+    <IncludePath>$(ProjectDir)..\CFA10099;C:\Program Files (x86)\Arduino\hardware\teensy\avr\libraries\SPI;$(ProjectDir)..\..\..\\Github\\CFA10099\\CFA10099;C:\\Program Files (x86)\\Arduino\\hardware\\teensy\\avr\\cores\\teensy4;c:\program files (x86)\arduino\hardware\tools\arm\arm-none-eabi\include\c++\5.4.1;c:\program files (x86)\arduino\hardware\tools\arm\arm-none-eabi\include\c++\5.4.1\arm-none-eabi\armv7e-m\fpu\fpv5-d16;c:\program files (x86)\arduino\hardware\tools\arm\arm-none-eabi\include\c++\5.4.1\backward;c:\program files (x86)\arduino\hardware\tools\arm\lib\gcc\arm-none-eabi\5.4.1\include;c:\program files (x86)\arduino\hardware\tools\arm\lib\gcc\arm-none-eabi\5.4.1\include-fixed;c:\program files (x86)\arduino\hardware\tools\arm\arm-none-eabi\include;C:\Program Files (x86)\Arduino\hardware\teensy\avr\libraries\SPI</IncludePath>
+    <RemoteCCompileToolExe>C:\\Program Files (x86)\\Arduino\\hardware\\tools\arm\bin\arm-none-eabi-g++</RemoteCCompileToolExe>
+    <RemoteCppCompileToolExe>C:\\Program Files (x86)\\Arduino\\hardware\\tools\arm\bin\arm-none-eabi-g++</RemoteCppCompileToolExe>
+    <ValidateArchitecture>false</ValidateArchitecture>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\CFA10099;C:\Program Files (x86)\Arduino\hardware\teensy\avr\libraries\SPI;C:\\Program Files (x86)\\Arduino\\hardware\\teensy\\avr\\cores\\teensy4;c:\program files (x86)\arduino\hardware\tools\arm\arm-none-eabi\include\c++\5.4.1;c:\program files (x86)\arduino\hardware\tools\arm\arm-none-eabi\include\c++\5.4.1\arm-none-eabi\armv7e-m\fpu\fpv5-d16;c:\program files (x86)\arduino\hardware\tools\arm\arm-none-eabi\include\c++\5.4.1\backward;c:\program files (x86)\arduino\hardware\tools\arm\lib\gcc\arm-none-eabi\5.4.1\include;c:\program files (x86)\arduino\hardware\tools\arm\lib\gcc\arm-none-eabi\5.4.1\include-fixed;c:\program files (x86)\arduino\hardware\tools\arm\arm-none-eabi\include;C:\Program Files (x86)\Arduino\hardware\teensy\avr\libraries\SPI;C:\Program Files (x86)\Arduino\hardware\teensy\avr\libraries\SD\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <GccToolChain>C:\\Program Files (x86)\\Arduino\\hardware\\tools\arm\bin\arm-none-eabi-g++</GccToolChain>
+      <CppLanguageStandard>gnu++1y</CppLanguageStandard>
+      <CLanguageStandard>gnu11</CLanguageStandard>
+      <CAdditionalWarning />
+      <CppAdditionalWarning />
+      <ForcedIncludeFiles>c:\program files\microsoft visual studio\2022\community\common7\ide\extensions\0axxbbxm.vxj\Micro Platforms\default\vm-intelli-pre.h;C:\Users\jacgo\AppData\Local\Temp\VMBuilds\CFA10099\teensy41\Debug\.vmintelli\287e937e6ee34c33572b790f76c0d177\vm-intelli-gcc-defines.h;c:\program files\microsoft visual studio\2022\community\common7\ide\extensions\0axxbbxm.vxj\Micro Platforms\default\vm-intelli-post.h;$(ProjectDir)__vm\.CFA10099.vsarduino.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <UndefineAllPreprocessorDefinitions>true</UndefineAllPreprocessorDefinitions>
+      <IgnoreStandardIncludePath>true</IgnoreStandardIncludePath>
+      <PreprocessorDefinitions>_VMICRO_INTELLISENSE;__HARDWARE_imxrt1062__;__HARDWARE_IMXRT1062__;_VMDEBUG=1;__IMXRT1062__;TEENSYDUINO=157;ARDUINO=108016;ARDUINO_TEENSY41;F_CPU=600000000;USB_SERIAL;LAYOUT_US_ENGLISH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\CFA10099;C:\Program Files (x86)\Arduino\hardware\teensy\avr\libraries\SPI;$(ProjectDir)..\..\..\\Github\\CFA10099\\CFA10099;C:\\Program Files (x86)\\Arduino\\hardware\\teensy\\avr\\cores\\teensy4;c:\program files (x86)\arduino\hardware\tools\arm\arm-none-eabi\include\c++\5.4.1;c:\program files (x86)\arduino\hardware\tools\arm\arm-none-eabi\include\c++\5.4.1\arm-none-eabi\armv7e-m\fpu\fpv5-d16;c:\program files (x86)\arduino\hardware\tools\arm\arm-none-eabi\include\c++\5.4.1\backward;c:\program files (x86)\arduino\hardware\tools\arm\lib\gcc\arm-none-eabi\5.4.1\include;c:\program files (x86)\arduino\hardware\tools\arm\lib\gcc\arm-none-eabi\5.4.1\include-fixed;c:\program files (x86)\arduino\hardware\tools\arm\arm-none-eabi\include;C:\Program Files (x86)\Arduino\hardware\teensy\avr\libraries\SPI;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <GccToolChain>C:\\Program Files (x86)\\Arduino\\hardware\\tools\arm\bin\arm-none-eabi-g++</GccToolChain>
+      <CppLanguageStandard>gnu++1y</CppLanguageStandard>
+      <CLanguageStandard>gnu11</CLanguageStandard>
+      <CAdditionalWarning />
+      <CppAdditionalWarning />
+      <ForcedIncludeFiles>c:\program files\microsoft visual studio\2022\community\common7\ide\extensions\0axxbbxm.vxj\Micro Platforms\default\vm-intelli-pre.h;C:\Users\jacgo\AppData\Local\Temp\VMBuilds\CFA10099\teensy41\Release\.vmintelli\f0db91e39db621316662bae8431d7141\vm-intelli-gcc-defines.h;c:\program files\microsoft visual studio\2022\community\common7\ide\extensions\0axxbbxm.vxj\Micro Platforms\default\vm-intelli-post.h;$(ProjectDir)__vm\.CFA10099.vsarduino.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <UndefineAllPreprocessorDefinitions>true</UndefineAllPreprocessorDefinitions>
+      <IgnoreStandardIncludePath>true</IgnoreStandardIncludePath>
+      <PreprocessorDefinitions>_VMICRO_INTELLISENSE;__HARDWARE_imxrt1062__;__HARDWARE_IMXRT1062__;__IMXRT1062__;TEENSYDUINO=157;ARDUINO=108016;ARDUINO_TEENSY41;F_CPU=600000000;USB_SERIAL;LAYOUT_US_ENGLISH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+  <ProjectExtensions>
+    <VisualStudio>
+      <UserProperties config.Debug.customdebug_teensy41_debugger_type="universal" />
+    </VisualStudio>
+  </ProjectExtensions>
+</Project>

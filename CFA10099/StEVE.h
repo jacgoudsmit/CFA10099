@@ -1,28 +1,533 @@
 /****************************************************************************
-StEVE.h
+Steve.h
 
-The StEVE class (Static EVE) implements the FT81X interface as a C++ class,
-in such a way that various display types can all be handled with the same
-code, without resorting too much to preprocessor dependencies. So for
-example, this doesn't require you to use #define to set parameters such as
-display size.
+The Steve class (Static Type-safe EVE) implements a driver for FT81X displays
+in such a way that variations between LCD panels, and variations between
+types of control hardware can all be handled by the same code, without
+depending on the preprocessor. For example, unlike some other libraries
+the width and height of the display are not set by a #define, and it's
+possible to create multiple instances of the class to control multiple
+displays with different parameters. Also, though the library is somewhat
+Arduino-centric, it should be easy to port it to other platforms.
+
+References:
+* [DS81X]=Bridgetek FT81X Embedded Video Engine Datasheet version 1.4 (2017-06-30)
+  https://brtchip.com/wp-content/uploads/2021/09/DS_FT81x.pdf
+* [DS815]=Bridgetek FT81X (815/6) Advanced Embedded Video Engine Datasheet version 1.0 (2018-08-15)
+  https://brtchip.com/wp-content/uploads/sites/3/2021/07/DS_BT81X.pdf
+* [PG81X]=Bridgetek BRT_AN_033 BT81X Series Programming Guide version 2.3 (2022-11-24)
+  https://brtchip.com/wp-content/uploads/2022/12/BRT_AN_033_BT81X-Series-Programming-Guide.pdf
+
+Module overview:
+(EVE1)
+* FT800: 480x320,  18 bit RGB, 256K RAM, resistive  touch (NOT SUPPORTED)
+* FT801: 480x320,  18 bit RGB, 256K RAM, capacitive touch (NOT SUPPORTED)
+(EVE2)
+* FT810: 800x600,  18 bit RGB, 1MB RAM,  resistive  touch
+* FT811: 800x600,  18 bit RGB, 1MB RAM,  capacitive touch (TESTED)
+* FT812: 800x600,  24 bit RGB, 1MB RAM,  resistive  touch
+* FT813: 800x600,  24 bit RGB, 1MB RAM,  capacitive touch
+(EVE3)
+* BT815: 800x600,  24 bit RGB, 1MB RAM,  capacitive touch
+* BT816: 800x600,  24 bit RGB, 1MB RAM,  resistive  touch
+(EVE4)
+* BT817: 1280x800, 24 bit RGB, 1MB RAM,  capacitive touch
+* BT818: 1280x800, 24 bit RGB, 1MB RAM,  resistive  touch
+
+NOTE: The FT800 and FT801 (EVE1, 480x320, 18 bit RGB, 256K RAM) work mostly
+the same as the supported modules, but the memory map of the FT80X is
+different. This code doesn't work for them, but can probably be made
+to work.
 
 ****************************************************************************/
 
 #pragma once
 
-#include <Arduino.h>
 #include <SPI.h>
 
 // Uncomment this to show detailed data about what the code does
 #define DBG_TRAFFIC(...) //DBG_STAT(__VA_ARGS__)
+#define DBG_GEEK(...)
+#define DBG_STAT(...)
 
-#ifndef STRINGIZE
-#define _STRINGIZE(x) #x
-#define STRINGIZE(x) _STRINGIZE(x)
-#endif
+//---------------------------------------------------------------------------
+// Hardware Abstraction Layer for Steve
+//
+// This abstract class provides the communication with an EVE chip.
+class SteveHAL
+{
+  friend class Steve;
 
-class StEVE
+protected:
+  //-------------------------------------------------------------------------
+  // Constructor
+  //
+  // The constructor is protected so it can only be called by subclasses.
+  SteveHAL()
+  {
+    // Nothing
+  }
+
+protected:
+  //-------------------------------------------------------------------------
+  // Initialize the communication
+  //
+  // This is called by Steve to initialize the communication with the EVE
+  // chip.
+  //
+  // According to some documentation, in slow mode (until the EVE clock is
+  // running, the SPI clock should run no faster than 11 MHz. After the EVE
+  // chip is initialized, the SPI bus can use up to 30 MHz.
+  virtual void Init(
+    bool slow = false) = 0;             // True=use slow speed for early init
+
+protected:
+  //-------------------------------------------------------------------------
+  // Pause or resume communication
+  //
+  // This is called by Steve to pause or resume communication to the
+  // EVE chip.
+  virtual void Pause(
+    bool pause) = 0;                    // True=pause, false=resume
+
+protected:
+  //-------------------------------------------------------------------------
+  // Turn the power on or off
+  //
+  // This is called by Steve to reset the chip as part of the initialization
+  // sequence.
+  //
+  // NOTE: The pin is marked !PD (Power Down Not) so the pin is set to LOW
+  // for a 'false' parameter, HIGH for 'true'.
+  virtual void Power(
+    bool enable) = 0;                   // True=on (!PD high) false=off/reset
+
+protected:
+  //-------------------------------------------------------------------------
+  // Select or de-select the chip
+  //
+  // This is called by Steve to select or de-select the chip.
+  //
+  // The SPI interface on the EVE chips is not just used to let the chip
+  // listen or ignore the data on the SPI bus, but also resets a sequencer
+  // inside the chip that makes it start listening to host commands.
+  // Some host commands initiate transfers of multiple bytes, and !CS needs
+  // to stay active during the entire transfer.
+  //
+  // The HAL class keeps track of whether the call to this function actually
+  // changed the state of the !CS line or not, and the return value is
+  // used by the Steve class to make sure that the chip is the correct state.
+  virtual bool                          // Returns true if !CS line changed
+  Select(
+    bool enable) = 0;                   // True=select (!CS low) false=de-sel
+
+protected:
+  //-------------------------------------------------------------------------
+  // Transfer data to and from the EVE chip
+  virtual uint8_t                       // Returns received byte
+  Transfer(
+    uint8_t value) = 0;                 // Byte to send
+
+protected:
+  //-------------------------------------------------------------------------
+  // Send an 8-bit value
+  virtual void Send8(
+    uint8_t value)                      // Value to send
+  {
+    Transfer(value);
+  }
+
+protected:
+  //-------------------------------------------------------------------------
+  // Send a 16-bit value in little-endian format
+  //
+  // The least significant byte is sent first.
+  virtual void Send16(
+    uint16_t value)                     // Value to send
+  {
+    Transfer((uint8_t)(value));
+    Transfer((uint8_t)(value >> 8));
+  }
+
+protected:
+  //-------------------------------------------------------------------------
+  // Send a 32-bit value in little-endian format
+  //
+  // The least significant byte is sent first.
+  virtual void Send32(
+    uint32_t value)                     // Value to send
+  {
+    Transfer((uint8_t)(value));
+    Transfer((uint8_t)(value >> 8));
+    Transfer((uint8_t)(value >> 16));
+    Transfer((uint8_t)(value >> 24));
+  }
+
+protected:
+  //-------------------------------------------------------------------------
+  // Receive an 8-bit value
+  virtual uint8_t                       // Returns incoming value
+  Receive8()
+  {
+    return Transfer(0);
+  }
+
+protected:
+  //-------------------------------------------------------------------------
+  // Receive a 16-bit value in little-endian format
+  //
+  // The least significant byte is received first.
+  virtual uint16_t                      // Returns incoming value
+  Receive16()
+  {
+    uint16_t  result;
+
+    result =  (uint32_t)Transfer(0);
+    result |= (uint32_t)Transfer(0) << 8;
+
+    return result;
+  }
+
+protected:
+  //-------------------------------------------------------------------------
+  // Receive a 32-bit value in little-endian format
+  //
+  // The least significant byte is received first.
+  virtual uint32_t                      // Returns incoming value
+  Receive32()
+  {
+    uint32_t  result;
+
+    result =  (uint32_t)Transfer(0);
+    result |= (uint32_t)Transfer(0) << 8;
+    result |= (uint32_t)Transfer(0) << 16;
+    result |= (uint32_t)Transfer(0) << 24;
+
+    return result;
+  }
+
+protected:
+  //-------------------------------------------------------------------------
+  // Receive a buffer
+  virtual uint32_t                      // Returns number of bytes received
+  ReceiveBuffer(
+    uint8_t *buffer,                    // Buffer to receive to
+    uint32_t len)                       // Number of bytes to receive
+  {
+    uint32_t result;
+    uint8_t *t = buffer;
+
+    for (result = 0; result < len; result++)
+    {
+      *t++ = Receive8();
+    }
+
+    return result;
+  }
+
+protected:
+  //-------------------------------------------------------------------------
+  // Send zero-bytes for alignment
+  //
+  // This takes a number of previously transmitted bytes and transmit the
+  // required number of extra bytes to get the number to a multiple of 4.
+  virtual uint32_t                      // Returns updated number bytes sent
+  SendAlignmentBytes(
+    uint32_t num)                       // Previous number of bytes sent
+  {
+    uint32_t result = num;
+
+    while (result % 4)
+    {
+      Send8(0);
+      result++;
+    }
+
+    return result;
+  }
+
+protected:
+  //-------------------------------------------------------------------------
+  // Send data from a RAM buffer to the chip
+  //
+  // The function sends a block of data of the given size.
+  virtual uint32_t                      // Returns number of bytes sent
+  SendBuffer(
+    const uint8_t* data,                // Data buffer to send
+    uint32_t len)                       // Buffer length
+  {
+    uint32_t result;
+
+    const uint8_t* p = data;
+    for (result = 0; result < len; result++)
+    {
+      Send8(*p++);
+    }
+
+    return result;
+  }
+
+protected:
+  //-------------------------------------------------------------------------
+  // Send a nul-terminated string
+  //
+  // The function reads a string from RAM, and transfers it to the EVE
+  // It stops either when it finds the end of the source string, or when
+  // it reaches the maximum length minus one. Then it sends a nul byte.
+  //
+  // The maximum length parameter includes the nul-terminator byte. If 0 is
+  // used for the maximum length parameter, the value is interpreted as
+  // "65536".
+  //
+  // If the pointer is NULL, an empty string is sent.
+  virtual uint16_t                      // Returns number of bytes sent
+  SendString(
+    const char* message,                // Characters to send, '\0' is end
+    uint16_t maxlen)                    // Max input length including \0
+  {
+    uint16_t result;
+    const char* s = message;
+
+    // Replace the pointer if it's NULL
+    if (!s)
+    {
+      s = "";
+    }
+
+    // Print the non-nul characters. Note: if maxlen is 0, maxlen - 1
+    // underflows to 65535.
+    for (result = 0; result < maxlen - 1; result++)
+    {
+      char c = *s++;
+
+      if (!c)
+      {
+        break;
+      }
+
+      Send8(c);
+    }
+
+    // Always send nul terminator byte
+    Send8(0);
+    result += 1;
+
+    return result;
+  }
+
+protected:
+  //-----------------------------------------------------------------------
+  // Send a string from program memory
+  //
+  // Same as for RAM strings, but the string parameter is for strings
+  // stored in program memory. This takes some extra processing for some
+  // Arduinos; use the F() macro to pass a literal string or program
+  // memory string.
+  //
+  // The function assumes that the message pointer points to a valid string
+  // and functions such as strlen_F can be executed on it. This should be
+  // safe for strings in ROM or Flash because you would normally initialize
+  // them as a string literal. If the maximum length parameter is set to 0,
+  // the actual length of the string is used. If the buffer size parameter
+  // is set to 0, the length of the string is used.
+  virtual uint16_t                    // Returns number of bytes sent
+  SendStringF(
+    const __FlashStringHelper* message, // Characters to send, '\0' is end
+    uint16_t maxlen,                  // Max input length including \0
+    uint16_t bufsize)                  // Buffer size to use
+  {
+    uint16_t result = 0;
+    size_t len = strnlen_P((const char *)message, maxlen - 1);
+    size_t actualbufsize = min((size_t)bufsize - 1, (size_t)len);
+    uint8_t buf[actualbufsize];
+    const char *s = (const char *)message;
+    size_t remlen = len;
+
+    while (remlen)
+    {
+      size_t copylen = min(remlen, actualbufsize);
+
+      memcpy_P(buf, s, copylen);
+      SendBuffer(buf, copylen);
+
+      s += copylen;
+      result += copylen;
+      remlen -= copylen;
+    }
+
+    // Always send nul terminator byte
+    Send8(0);
+    result += 1;
+
+    return result;
+  }
+
+protected:
+  //-------------------------------------------------------------------------
+  // Wait for at least the requested time
+  virtual void
+  Delay(
+    uint32_t ms) = 0;                   // Number of milliseconds to wait
+};
+
+
+/////////////////////////////////////////////////////////////////////////////
+// HARDWARE ABSTRACTION LAYER FOR ARDUINO
+/////////////////////////////////////////////////////////////////////////////
+
+
+//---------------------------------------------------------------------------
+// Hardware Abstraction Layer for Arduino SPI
+class SteveHAL_Arduino : public SteveHAL
+{
+private:
+  //-------------------------------------------------------------------------
+  // Constants and initialization parameters
+
+  SPIClass         &_spi;               // SPI instance
+  const SPISettings _spi_settings;      // SPI settings
+  const int         _pin_cs;            // Chip Select Not Pin
+  const int         _pin_pd;            // Power Down Not Pin
+  const int         _pin_int;           // Interrupt Pin (-1=none)
+
+private:
+  //-------------------------------------------------------------------------
+  // State data
+
+  bool              _selected;          // True if chip currently selected
+
+public:
+  //-------------------------------------------------------------------------
+  // Constructor
+  SteveHAL_Arduino(
+    SPIClass &spi,                      // SPI port
+    uint32_t spi_clock,                 // SPI clock speed
+    int pin_cs,                         // !CS pin
+    int pin_pd,                         // !PD pin
+    int pin_int)                        // Interrupt pin (-1=none)
+    : SteveHAL()
+    , _spi(spi)
+    , _spi_settings(spi_clock, MSBFIRST, SPI_MODE0)
+    , _pin_cs(pin_cs)
+    , _pin_pd(pin_pd)
+    , _pin_int(pin_int)
+  {
+    // Set the output pins before switching the pins to output, to
+    // avoid glitches
+    _selected = true; // Make sure the CS pin is changed next
+    Select(false); // De-select
+    Power(true); // Power on
+
+    // Configure the interrupt pin first, to avoid output-to-output
+    // conflicts
+    if (_pin_int >= 0)
+    {
+      pinMode(_pin_int, INPUT_PULLUP);
+    }
+
+    // Configure the Power Down Not pin; it's also used as reset.
+    // This will power up the panel.
+    if (_pin_pd >= 0)
+    {
+      pinMode(_pin_pd, OUTPUT);
+    }
+
+    // Finally configure the chip select pin
+    if (_pin_cs >= 0)
+    {
+      pinMode(_pin_cs, OUTPUT);
+    }
+  }
+
+protected:
+  //-------------------------------------------------------------------------
+  // Initialize the communication
+  void Init(
+    bool slow = false) override         // True=use slow speed for early init
+  {
+    // TODO: Implement slow/fast
+    DBG_TRAFFIC("beginTransaction\n");
+    _spi.beginTransaction(_spi_settings);
+  }
+
+protected:
+  //-------------------------------------------------------------------------
+  // Pause or resume communication
+  void Pause(
+    bool pause) override                // True=pause, false=resume
+  {
+    if (pause)
+    {
+      DBG_TRAFFIC("endTransaction\n");
+      _spi.endTransaction();
+    }
+    else
+    {
+      Init();
+    }
+  }
+
+protected:
+  //-------------------------------------------------------------------------
+  // Turn the power on or off
+  void Power(
+    bool enable) override               // True=on (!PD high) false=off/reset
+  {
+    // Set the pin HIGH to power up
+    digitalWrite(_pin_pd, enable ? HIGH : LOW);
+  }
+
+protected:
+  //-------------------------------------------------------------------------
+  // Select or de-select the chip
+  bool                                  // Returns true if !CS line changed
+  Select(
+    bool enable) override               // True=select (!CS low) false=de-sel
+  {
+    bool result = (enable != _selected);
+
+    if (result)
+    {
+      _selected = enable;
+
+      DBG_TRAFFIC("Select %u\n", !!enable);
+
+      // Set the pin LOW to enable the chip
+      digitalWrite(_pin_cs, enable ? LOW : HIGH);
+    }
+
+    return result;
+  }
+
+protected:
+  //-------------------------------------------------------------------------
+  // Transfer data to and from the EVE chip
+  virtual uint8_t                       // Returns received byte
+    Transfer(
+      uint8_t value) override             // Byte to send
+  {
+    // TODO: more efficient 16/32 bit transfers; DMA...
+    return _spi.transfer(value);
+  }
+
+protected:
+  //-------------------------------------------------------------------------
+  // Wait for at least the requested time
+  virtual void
+  Delay(
+    uint32_t ms) override               // Number of milliseconds to wait
+  {
+    delay(ms);
+  }
+};
+
+
+/////////////////////////////////////////////////////////////////////////////
+// STATIC TYPESAFE EVE CLASS
+/////////////////////////////////////////////////////////////////////////////
+
+
+class Steve
 {
 public:
     const static uint32_t MaxStringSize         = 256;
@@ -42,14 +547,10 @@ public:
     //
     // The class works mostly like a uint16_t but whenever the value is
     // changed, a modulo is applied with the maximum value.
-    //
-    // Note: The optimizer should be smart enough to substitute a bitwise
-    // AND operation instead of performing the modulo by dividing, for
-    // maximum values that are a power of 2.
     template<uint16_t max_value> class Index
     {
     private:
-        uint16_t    _index;             // Stored value, always <max_value
+        uint16_t    _index;             // Stored value, always < max_value
 
     private:
         //-------------------------------------------------------------------
@@ -62,7 +563,9 @@ public:
     public:
         //-------------------------------------------------------------------
         // Constructor
-        Index(uint16_t initial_value = 0) : _index(initial_value)
+        Index(
+            uint16_t initial_value = 0) 
+        : _index(initial_value)
         {
             Wrap();
         }
@@ -120,27 +623,33 @@ public:
 
 public:
     //-----------------------------------------------------------------------
-    // Memory locations
-
-    // Memory map, see datasheet section 5 p.40
-    // NOTE: Addresses are 22 bits.
-    const static uint32_t RAM_CMD               = 0x308000;
-    const static uint32_t RAM_CMD_SIZE          = 4*1024;
-    const static uint32_t RAM_DL                = 0x300000;
-    const static uint32_t RAM_DL_SIZE           = 8*1024;
+    // Memory map
+    //
+    // Note: Addresses are 22 bits.
+    // [DS815 s5 p.42][DS81X s5 p.41][PG81X s2.1 p.14]
     const static uint32_t RAM_G                 = 0x000000;
-    const static uint32_t RAM_G_SIZE            = 1024*1024;
-    const static uint32_t RAM_REG               = 0x302000;
-    const static uint32_t RAM_ROMSUB            = 0x30A000;
     const static uint32_t ROM_FONT              = 0x1E0000;
-    const static uint32_t ROMFONT_TABLEADDRESS  = 0x2FFFFC;
+    const static uint32_t ROM_FONTROOT          = 0x2FFFFC;
+    const static uint32_t RAM_DL                = 0x300000;
+    const static uint32_t RAM_REG               = 0x302000;
+    const static uint32_t RAM_CMD               = 0x308000;
+    const static uint32_t RAM_ERR_REPORT        = 0x309800;
+    const static uint32_t FLASH                 = 0x800000; // EVE3/EVE4
 
-    typedef Index<RAM_CMD_SIZE> CmdIndex;
-    typedef Index<RAM_DL_SIZE> DLIndex;
+    // Memory area sizes
+    const static uint32_t RAM_DL_SIZE           = 8 * 1024;
+    const static uint32_t RAM_CMD_SIZE          = 4 * 1024;
+    const static uint32_t RAM_G_SIZE            = 1024 * 1024;
+    const static uint32_t RAM_ERR_REPORT_SIZE   = 128;
 
-    // Registers, see datasheet section 5.1 Table 5-2 p.40
+    //-----------------------------------------------------------------------
+    // Register addresses
+    //
+    // Note: Addresses are 22 bits.
+    // [DS81X s5.1 p.41][PG81X s3 p.28]
     typedef enum
     {
+        // General configuration / status
         REG_ID                      = 0x302000,
         REG_FRAMES                  = 0x302004,
         REG_CLOCK                   = 0x302008,
@@ -152,6 +661,8 @@ public:
         REG_CPURESET                = 0x302020,
         REG_TAP_CRC                 = 0x302024,
         REG_TAP_MASK                = 0x302028,
+
+        // LCD panel configuration
         REG_HCYCLE                  = 0x30202C,
         REG_HOFFSET                 = 0x302030,
         REG_HSIZE                   = 0x302034,
@@ -170,21 +681,32 @@ public:
         REG_CSPREAD                 = 0x302068,
         REG_PCLK_POL                = 0x30206C,
         REG_PCLK                    = 0x302070,
+
+        // Touch control
         REG_TAG_X                   = 0x302074,
         REG_TAG_Y                   = 0x302078,
         REG_TAG                     = 0x30207C,
+
+        // Audio
         REG_VOL_PB                  = 0x302080,
         REG_VOL_SOUND               = 0x302084,
         REG_SOUND                   = 0x302088,
         REG_PLAY                    = 0x30208C,
+
+        // GPIO
         REG_GPIO_DIR                = 0x302090,
         REG_GPIO                    = 0x302094,
         REG_GPIOX_DIR               = 0x302098,
         REG_GPIOX                   = 0x30209C,
-        // 0x3020A0-0x3020A4 Reserved
+
+        //// 0x3020A0-0x3020A4 Reserved
+
+        // Interrupt control
         REG_INT_FLAGS               = 0x3020A8,
         REG_INT_EN                  = 0x3020AC,
         REG_INT_MASK                = 0x3020B0,
+
+        // Audio playback
         REG_PLAYBACK_START          = 0x3020B4,
         REG_PLAYBACK_LENGTH         = 0x3020B8,
         REG_PLAYBACK_READPTR        = 0x3020BC,
@@ -192,29 +714,32 @@ public:
         REG_PLAYBACK_FORMAT         = 0x3020C4,
         REG_PLAYBACK_LOOP           = 0x3020C8,
         REG_PLAYBACK_PLAY           = 0x3020CC,
+
+        // Backlight control
         REG_PWM_HZ                  = 0x3020D0,
         REG_PWM_DUTY                = 0x3020D4,
+
+        // Display list macro commands
         REG_MACRO_0                 = 0x3020D8,
         REG_MACRO_1                 = 0x3020DC,
-        // 0x3020E0-0x3020F4 Reserved according to datasheet v1.2
-        REG_BUSYBITS                = 0x3020E8, // Not in datasheet v1.2
-        REG_ROMSUB_SEL              = 0x3020F0, // Not in datasheet v1.2
+
+        //// 0x3020E0-0x3020F4 Reserved
+
+        // Coprocessor registers
         REG_CMD_READ                = 0x3020F8,
         REG_CMD_WRITE               = 0x3020FC,
         REG_CMD_DL                  = 0x302100,
+
+        // Resistive touch engine (EVE1 compatibility mode functions)
         REG_TOUCH_MODE              = 0x302104,
-        REG_TOUCH_ADC_MODE          = 0x302108, // Compatibility
-        REG_CTOUCH_EXTENDED         = 0x302108, // Extended mode
+        REG_TOUCH_ADC_MODE          = 0x302108,
         REG_TOUCH_CHARGE            = 0x30210C,
         REG_TOUCH_SETTLE            = 0x302110,
         REG_TOUCH_OVERSAMPLE        = 0x302114,
         REG_TOUCH_RZTHRESH          = 0x302118,
-        REG_TOUCH_RAW_XY            = 0x30211C, // Compatibility
-        REG_CTOUCH_TOUCH1_XY        = 0x30211C, // Extended mode
-        REG_TOUCH_RZ                = 0x302120, // Compatibility
-        REG_CTOUCH_TOUCH4_Y         = 0x302120, // Extended mode
-        REG_TOUCH_SCREEN_XY         = 0x302124, // Compatibility
-        REG_CTOUCH_TOUCH0_XY        = 0x302124, // Extended mode
+        REG_TOUCH_RAW_XY            = 0x30211C,
+        REG_TOUCH_RZ                = 0x302120,
+        REG_TOUCH_SCREEN_XY         = 0x302124,
         REG_TOUCH_TAG_XY            = 0x302128,
         REG_TOUCH_TAG               = 0x30212C,
         REG_TOUCH_TAG1_XY           = 0x302130,
@@ -225,33 +750,95 @@ public:
         REG_TOUCH_TAG3              = 0x302144,
         REG_TOUCH_TAG4_XY           = 0x302148,
         REG_TOUCH_TAG4              = 0x30214C,
+
+        // Capacitive touch engine (Extended mode: REG_CTOUCH_EXTENDED=0)
+        // These overlap with the resistive touch engine registers
+        REG_CTOUCH_MODE             = 0x302104,
+        REG_CTOUCH_EXTEND           = 0x302108, // Alias
+        REG_CTOUCH_EXTENDED         = 0x302108,
+        //REG_CTOUCH_CHARGE           = 0x30210C,
+        //REG_CTOUCH_SETTLE           = 0x302110,
+        //REG_CTOUCH_OVERSAMPLE       = 0x302114,
+        //REG_CTOUCH_RZTHRESH         = 0x302118
+        REG_CTOUCH_TOUCH1_XY        = 0x30211C,
+        REG_CTOUCH_TOUCH4_XY        = 0x302120,
+        REG_CTOUCH_TOUCH_XY         = 0x302124,
+        REG_CTOUCH_TOUCH0_XY        = 0x302124, // Alias
+        //REG_CTOUCH_TAG_XY           = 0x302128,
+        //REG_CTOUCH_TAG              = 0x30212C,
+        //REG_CTOUCH_TAG1_XY          = 0x302130,
+        //REG_CTOUCH_TAG1             = 0x302134,
+        //REG_CTOUCH_TAG2_XY          = 0x302138,
+        //REG_CTOUCH_TAG2             = 0x30213C,
+        //REG_CTOUCH_TAG3_XY          = 0x302140,
+        //REG_CTOUCH_TAG3             = 0x302144,
+        //REG_CTOUCH_TAG4_XY          = 0x302148,
+        //REG_CTOUCH_TAG4             = 0x30214C,
+
+        // Touch screen engine
         REG_TOUCH_TRANSFORM_A       = 0x302150,
         REG_TOUCH_TRANSFORM_B       = 0x302154,
         REG_TOUCH_TRANSFORM_C       = 0x302158,
         REG_TOUCH_TRANSFORM_D       = 0x30215C,
         REG_TOUCH_TRANSFORM_E       = 0x302160,
         REG_TOUCH_TRANSFORM_F       = 0x302164,
-        REG_CYA_TOUCH               = 0x302168,
-        REG_CTOUCH_TOUCH4_X         = 0x30216C, // Extended mode
-        REG_ANALOG                  = 0x30216C, // Alias; not in datasheet v1.2
-        REG_PATCHED_TOUCH_FAULT     = 0x30216C, // Alias; not in datasheet v1.2
-        REG_PATCHED_ANALOG          = 0x302170, // Not in datasheet v1.2
-        REG_TOUCH_FAULT             = 0x302170, // Not in datasheet v1.2
+        REG_TOUCH_CONFIG            = 0x302168,
+
+        // More touch screen (Extended mode)
+        REG_CTOUCH_TOUCH4_X         = 0x30216C,
+
+        //// 0x302170 Reserved
+
+        // Internal control
         REG_BIST_EN                 = 0x302174,
-        REG_CRC                     = 0x302178, // Not in datasheet v1.2
-        REG_SPI_EARLY_TX            = 0x30217C, // Not in datasheet v1.2
+        //// 0x302178-0x30217C Reserved
         REG_TRIM                    = 0x302180,
         REG_ANA_COMP                = 0x302184,
         REG_SPI_WIDTH               = 0x302188,
-        REG_TOUCH_DIRECT_XY         = 0x30218C, // Compatibility
-        REG_CTOUCH_TOUCH2_XY        = 0x30218C, // Extended mode
-        REG_TOUCH_DIRECT_Z1Z2       = 0x302190, // Compatibility
-        REG_CTOUCH_TOUCH3_XY        = 0x302190, // Extended mode
-        // 0x30902194 - 0x302560 Reserved
+
+        // Touch engine (Compatibilit mode)
+        REG_TOUCH_DIRECT_XY         = 0x30218C,
+        REG_TOUCH_DIRECT_Z1Z2       = 0x302190,
+
+        // Touch engine (Extended mode)
+        REG_CTOUCH_TOUCH2_XY        = 0x30218C,
+        REG_CTOUCH_TOUCH3_XY        = 0x302190,
+
+        //// 0x30902194 - 0x302560 Reserved
+
+        // Date stamp
         REG_DATESTAMP               = 0x302564, // 16 bytes
+
+        // Coprocessor
         REG_CMDB_SPACE              = 0x302574,
         REG_CMDB_WRITE              = 0x302578,
-        // All following are not in datasheet v1.2 section 5.1
+
+        // EVE3/EVE4
+        /*
+        REG_ADAPTIVE_FRAMERATE      = 0x30257C,
+        REG_UNDERRUN                = 0x30260C,
+        REG_AH_CYCLE_MAX            = 0x302610,
+        REG_PCLK_FREQ               = 0x302614,
+        REG_PCLK_2X                 = 0x302618,
+
+        REG_PLAYBACK_PAUSE          = 0x3025EC,
+
+        //REG_BUSYBITS                = 0x3020E8, // Not in datasheet v1.2
+        //REG_ROMSUB_SEL              = 0x3020F0, // Not in datasheet v1.2
+
+
+        //REG_ANALOG                  = 0x30216C, // Alias; not in datasheet v1.2
+        //REG_PATCHED_TOUCH_FAULT     = 0x30216C, // Alias; not in datasheet v1.2
+        //REG_PATCHED_ANALOG          = 0x302170, // Not in datasheet v1.2
+        //REG_TOUCH_FAULT             = 0x302170, // Not in datasheet v1.2
+        //REG_CRC                     = 0x302178, // Not in datasheet v1.2
+        //REG_SPI_EARLY_TX            = 0x30217C, // Not in datasheet v1.2
+
+        // Flash memory
+        REG_FLASH_STATUS            = 0x3025F0,
+        REG_FLASH_SIZE              = 0x309024,
+
+        // Special registers
         REG_TRACKER                 = 0x309000,
         REG_TRACKER_1               = 0x309004,
         REG_TRACKER_2               = 0x309008,
@@ -259,7 +846,10 @@ public:
         REG_TRACKER_4               = 0x309010,
         REG_MEDIAFIFO_READ          = 0x309014,
         REG_MEDIAFIFO_WRITE         = 0x309018,
-
+        REG_ANIM_ACTIVE             = 0x30902C,
+        REG_PLAY_CONTROL            = 0x30914E,
+        REG_COPRO_PATCH_PTR         = 0x307162,
+*/
         REG_CHIP_ID                 = 0x0C0000, // Datasheet 5.2 p.45
     }   REG;
 
@@ -669,16 +1259,18 @@ public:
         }
     };
 
+public:
+    typedef Index<RAM_CMD_SIZE> CmdIndex;
+    typedef Index<RAM_DL_SIZE> DLIndex;
+
+    /////////////////////////////////////////////////////////////////////////
+    // DATA
+    /////////////////////////////////////////////////////////////////////////
+
 protected:
-    // Constructor parameters
     const DisplayProfile
                    &_profile;           // Display init parameters
-    SPIClass       &_spi;               // SPI interface, not NULL
-    const SPISettings
-                    _spi_settings;      // SPI settings
-    const int       _pin_cs;            // Chip Select Not Pin (-1 = none)
-    const int       _pin_pd;            // Power Down Not Pin (-1 = none)
-    const int       _pin_int;           // Interrupt Pin (-1 = none)
+    SteveHAL       &_hal;               // Communication functions
 
     // Cached constants
     const uint16_t  _hcenter;           // Horizontal center in pixels
@@ -689,7 +1281,6 @@ protected:
                                         //   (offset from RAM_CMD)
     DLIndex         _dl_index;          // Display list write index
                                         //   (offset from RAM_DL)
-    bool            _selected;          // True if CS active
 
     /////////////////////////////////////////////////////////////////////////
     // CONSTRUCTOR
@@ -702,52 +1293,17 @@ public:
     // NOTE: Although the pin numbers are optional, the display probably
     // won't function without them, unless you create a subclass that
     // controls those lines by overriding the appropriate functions.
-    StEVE(
-        const DisplayProfile &profile,  // Display profile
-        SPIClass &spi,                  // SPI instance; call begin() first
-        uint32_t spi_clock,             // SPI clock
-        int pin_cs = -1,                // Chip Select Not pin, -1 = none
-        int pin_pd = -1,                // Power Down Not pin, -1 = none
-        int pin_int = -1)               // Interrupt pin, -1 = none
-        : _profile(profile)
-        , _spi(spi)
-        , _spi_settings(spi_clock, MSBFIRST, SPI_MODE0)
-        , _pin_cs(pin_cs)
-        , _pin_pd(pin_pd)
-        , _pin_int(pin_int)
-        , _hcenter(profile._hsize / 2)
-        , _vcenter(profile._vsize / 2)
-        , _cmd_index()
-        , _dl_index()
+    Steve(
+      const DisplayProfile &profile,    // Display profile
+      SteveHAL &hal)                    // Hardware functions
+      : _profile(profile)
+      , _hal(hal)
+      , _hcenter(profile._hsize / 2)
+      , _vcenter(profile._vsize / 2)
+      , _cmd_index()
+      , _dl_index()
     {
-        // Set the output pins before switching the pins to output, to
-        // avoid glitches
-        _selected = true; // Make sure the CS pin is changed next
-        Select(false); // De-select
-        Power(true); // Power on
-
-        // Configure the interrupt pin first, to avoid output-to-output
-        // conflicts
-        if (_pin_int >= 0)
-        {
-            pinMode(_pin_int, INPUT_PULLUP);
-        }
-
-        // Configure the Power Down Not pin; it's also used as reset.
-        // This will power up the panel.
-        if (_pin_pd >= 0)
-        {
-            pinMode(_pin_pd, OUTPUT);
-        }
-
-        // Finally configure the chip select pin
-        if (_pin_cs >= 0)
-        {
-            pinMode(_pin_cs, OUTPUT);
-        }
-
-        // NOTE: at this point, the display is not active.
-        // Don't forget to call Begin().
+      // Nothing here
     }
 
     /////////////////////////////////////////////////////////////////////////
@@ -799,58 +1355,6 @@ public:
     }
 
     /////////////////////////////////////////////////////////////////////////
-    // HARDWARE CONTROL
-    /////////////////////////////////////////////////////////////////////////
-
-public:
-    //-----------------------------------------------------------------------
-    // Turn the power on or off if a -PD pin is set
-    void Power(
-        bool enable)                    // True = on, false = off / reset
-    {
-        if (_pin_pd >= 0)
-        {
-            // Set the pin HIGH to power up
-            digitalWrite(_pin_pd, enable ? HIGH : LOW);
-        }
-    }
-
-public:
-    //-----------------------------------------------------------------------
-    // Select the FT81X if a -CS pin is set
-    void Select(
-        bool enable,                    // Select the FT81X display
-        bool dospi = false)             // True to also reprogram SPI port
-    {
-        if (enable != _selected)
-        {
-            _selected = enable;
-
-            if (_pin_cs >= 0)
-            {
-                DBG_TRAFFIC("Select %u\n", !!enable);
-
-                // Set the pin LOW to enable the chip
-                digitalWrite(_pin_cs, enable ? LOW : HIGH);
-            }
-        }
-
-        if (dospi)
-        {
-            if (enable)
-            {
-                DBG_TRAFFIC("beginTransaction\n");
-                _spi.beginTransaction(_spi_settings);
-            }
-            else
-            {
-                DBG_TRAFFIC("endTransaction\n");
-                _spi.endTransaction();
-            }
-        }
-    }
-
-    /////////////////////////////////////////////////////////////////////////
     // INITIALIZATION
     /////////////////////////////////////////////////////////////////////////
 
@@ -862,172 +1366,177 @@ public:
     bool                                // Returns true=success false=failure
     Begin()
     {
-        // Wake up the EVE
-        DBG_GEEK("Resetting\n");
-        delay(20);                      // Wait a few ms before waking it up
-        Power(false);                   // Reset
-        delay(6);                       // Hold for a little while
-        Power(true);                    // Power on
-        delay(21);
+      // Wake up the EVE
+      DBG_GEEK("Resetting\n");
+      _hal.Delay(20);                      // Wait a few ms before waking it up
+      _hal.Power(false);                   // Reset
+      _hal.Delay(6);                       // Hold for a little while
+      _hal.Power(true);                    // Power on
+      _hal.Delay(21);
 
-        // Select the chip and initialize the SPI bus
-        Select(true, true);
+      // Select the chip and initialize the SPI bus in slow mode until
+      // the EVE clock is initialized
+      _hal.Select(true);
+      _hal.Init(true);
 
-        // Select the internal or external clock, and select the PLL
-        // multiplier for an external clock as necessary.
-        if (_profile._clock == CLOCK_INT)
+      // Select the internal or external clock, and select the PLL
+      // multiplier for an external clock as necessary.
+      if (_profile._clock == CLOCK_INT)
+      {
+        DBG_TRAFFIC("Setting clock mode to internal\n");
+        //Command_Write(CLKINT);
+      }
+      else
+      {
+        DBG_TRAFFIC("Setting clock mode to %X\n", _profile._clock);
+        HostCommand(HOSTCMD_CLKEXT);
+        HostCommand(HOSTCMD_CLKSEL, (uint8_t)_profile._clock);
+      }
+
+      // Activate the FT81X and give it some time to initialize
+      HostCommand(HOSTCMD_ACTIVE, 0);
+      _hal.Delay(40);
+
+      // Re-init in fast mode
+      _hal.Init(false);
+
+      // Repeatedly poll REG_ID with up to 250 maximum retries and a 1 ms
+      // delay between retries.
+      // The register should return 0x7C when the processor is running.
+      if (!RegWait8(REG_ID, 0x7C, 250, 1))
+      {
+        // TODO: report problem and return false
+        DBG_STAT("Timeout waiting for ID of 0x7C.\n");
+        DBG_STAT("Is the device connected? Is the right EVE device selected?\n");
+        return false;
+      }
+
+      // Repeatedly poll REG_CPURESET until it returns 0 meaning the reset
+      // is complete
+      while (!RegWait8(REG_CPURESET, 0, 250, 1))
+      {
+        // TODO: report problem and return false
+        DBG_STAT("Timeout waiting for EVE CPU reset.\n");
+        DBG_STAT("Is the device connected? Is the right EVE device selected?\n");
+        // TODO: in at the top, out at the bottom
+        return false;
+      }
+
+      // Read the chip ID and match it with the expected value
+      if (_profile._chipid != CHIPID_ANY)
+      {
+        uint32_t chip_id = RegRead32(REG_CHIP_ID);
+        if (_profile._chipid != (CHIPID)chip_id)
         {
-            DBG_TRAFFIC("Setting clock mode to internal\n");
-            //Command_Write(CLKINT);
+          DBG_STAT("Chip ID mismatch: Wanted %08X, got %08X\n", _profile._chipid, chip_id);
+          // TODO: in at the top, out at the bottom
+          return false;
         }
-        else
-        {
-            DBG_TRAFFIC("Setting clock mode to %X\n", _profile._clock);
-            HostCommand(HOSTCMD_CLKEXT);
-            HostCommand(HOSTCMD_CLKSEL, (uint8_t)_profile._clock);
-        }
+      }
 
-        // Activate the FT81X and give it some time to initialize
-        HostCommand(HOSTCMD_ACTIVE, 0);
-        delay(40);
+      // Store the frequency in the register if requested
+      if (_profile._frequency)
+      {
+        RegWrite32(REG_FREQUENCY, _profile._frequency);
+      }
 
-        // Repeatedly poll REG_ID with up to 250 maximum retries and a 1 ms
-        // delay between retries.
-        // The register should return 0x7C when the processor is running.
-        if (!RegWait8(REG_ID, 0x7C, 250, 1))
-        {
-            // TODO: report problem and return false
-            DBG_STAT("Timeout waiting for ID of 0x7C.\n");
-            DBG_STAT("Is the device connected? Is the right EVE device selected?\n");
-            return false;
-        }
+      // Get the current write pointer from the EVE
+      CmdInitWriteIndex();
 
-        // Repeatedly poll REG_CPURESET until it returns 0 meaning the reset
-        // is complete
-        while (!RegWait8(REG_CPURESET, 0, 250, 1))
-        {
-            // TODO: report problem and return false
-            DBG_STAT("Timeout waiting for EVE CPU reset.\n");
-            DBG_STAT("Is the device connected? Is the right EVE device selected?\n");
-            // TODO: in at the top, out at the bottom
-            return false;
-        }
+      // Execute bug workarounds for specific subclasses
+      if (!EarlyInit())
+      {
+        // TODO: in at the top, out at the bottom
+        return false;
+      }
 
-        // Read the chip ID and match it with the expected value
-        if (_profile._chipid != CHIPID_ANY)
-        {
-            uint32_t chip_id = RegRead32(REG_CHIP_ID);
-            if (_profile._chipid != (CHIPID)chip_id)
-            {
-                DBG_STAT("Chip ID mismatch: Wanted %08X, got %08X\n", _profile._chipid, chip_id);
-                // TODO: in at the top, out at the bottom
-                return false;
-            }
-        }
+      // Set PCLK to zero; don't clock the LCD until later
+      RegWrite8(REG_PCLK, 0);
 
-        // Store the frequency in the register if requested
-        if (_profile._frequency)
-        {
-            RegWrite32(REG_FREQUENCY, _profile._frequency);
-        }
+      // Turn off backlight
+      RegWrite8(REG_PWM_DUTY, 0);
 
-        // Get the current write pointer from the EVE
-        CmdInitWriteIndex();
+      // Initialize display parameters
+      RegWrite16(REG_HSIZE,    _profile._hsize);   // active display width
+      RegWrite16(REG_HCYCLE,   _profile._hcycle);  // total number of clocks per line, incl front/back porch
+      RegWrite16(REG_HOFFSET,  _profile._hoffset); // start of active line
+      RegWrite16(REG_HSYNC0,   _profile._hsync0);  // start of horizontal sync pulse
+      RegWrite16(REG_HSYNC1,   _profile._hsync1);  // end of horizontal sync pulse
+      RegWrite16(REG_VSIZE,    _profile._vsize);   // active display height
+      RegWrite16(REG_VCYCLE,   _profile._vcycle);  // total number of lines per screen, incl pre/post
+      RegWrite16(REG_VOFFSET,  _profile._voffset); // start of active screen
+      RegWrite16(REG_VSYNC0,   _profile._vsync0);  // start of vertical sync pulse
+      RegWrite16(REG_VSYNC1,   _profile._vsync1);  // end of vertical sync pulse
+      RegWrite8( REG_SWIZZLE,  _profile._swizzle); // FT800 output to LCD - pin order
+      RegWrite8( REG_PCLK_POL, _profile._pclkpol); // LCD data is clocked in on this PCLK edge
+      // Don't set PCLK yet - wait for just after the first display list
 
-        // Execute bug workarounds for specific subclasses
-        if (!EarlyInit())
-        {
-            // TODO: in at the top, out at the bottom
-            return false;
-        }
+      // Set 10 mA or 5 mA drive for PCLK, DISP, VSYNC, DE, RGB lines and
+      // back light PWM.
+      if (_profile._lcd10ma)
+      {
+        RegWrite16(REG_GPIOX, RegRead16(REG_GPIOX) | 0x1000);
+      }
+      else
+      {
+        RegWrite16(REG_GPIOX, RegRead16(REG_GPIOX) & ~0x1000);
+      }
 
-        // Set PCLK to zero; don't clock the LCD until later
-        RegWrite8(REG_PCLK, 0);
+      // Enable or disable RGB clock spreading for reduced noise
+      RegWrite8(REG_CSPREAD, _profile._cspread ? 1 : 0);
 
-        // Turn off backlight
-        RegWrite8(REG_PWM_DUTY, 0);
+      // Enable or disable dithering
+      RegWrite8(REG_DITHER, _profile._dither ? 1 : 0);
 
-        // Initialize display parameters
-        RegWrite16(REG_HSIZE,    _profile._hsize);   // active display width
-        RegWrite16(REG_HCYCLE,   _profile._hcycle);  // total number of clocks per line, incl front/back porch
-        RegWrite16(REG_HOFFSET,  _profile._hoffset); // start of active line
-        RegWrite16(REG_HSYNC0,   _profile._hsync0);  // start of horizontal sync pulse
-        RegWrite16(REG_HSYNC1,   _profile._hsync1);  // end of horizontal sync pulse
-        RegWrite16(REG_VSIZE,    _profile._vsize);   // active display height
-        RegWrite16(REG_VCYCLE,   _profile._vcycle);  // total number of lines per screen, incl pre/post
-        RegWrite16(REG_VOFFSET,  _profile._voffset); // start of active screen
-        RegWrite16(REG_VSYNC0,   _profile._vsync0);  // start of vertical sync pulse
-        RegWrite16(REG_VSYNC1,   _profile._vsync1);  // end of vertical sync pulse
-        RegWrite8( REG_SWIZZLE,  _profile._swizzle); // FT800 output to LCD - pin order
-        RegWrite8( REG_PCLK_POL, _profile._pclkpol); // LCD data is clocked in on this PCLK edge
-        // Don't set PCLK yet - wait for just after the first display list
+      // Enable output bits on LCD outputs
+      // Encoded as 3 values in 3 groups of 3 bits.
+      // 0b0000_000R_RRGG_GBBB
+      //                   --- Number of bits used for Blue
+      //               ----    Number of bits used for Green
+      //           ----        Number of bits used for Red
+      //   --------            Reserved
+      // If set to 0 (default), the EVE uses 8 bits (FT812/FT813) or 6 bits
+      // (FT810/FT811).
+      // This was commented out in the original code
+      //REG_Write_16(REG_OUTBITS, _profile._outbits);
 
-        // Set 10 mA or 5 mA drive for PCLK, DISP, VSYNC, DE, RGB lines and
-        // back light PWM.
-        if (_profile._lcd10ma)
-        {
-            RegWrite16(REG_GPIOX, RegRead16(REG_GPIOX) | 0x1000);
-        }
-        else
-        {
-            RegWrite16(REG_GPIOX, RegRead16(REG_GPIOX) & ~0x1000);
-        }
+      // Touch screen initialization
+      if (!TouchInit())
+      {
+        // TODO: in at the top, out at the bottom
+        return false;
+      }
 
-        // Enable or disable RGB clock spreading for reduced noise
-        RegWrite8(REG_CSPREAD, _profile._cspread ? 1 : 0);
+      // TODO: Audio off
 
-        // Enable or disable dithering
-        RegWrite8(REG_DITHER, _profile._dither ? 1 : 0);
+      // Write the initial display list directly to RAM_DL; the coprocessor
+      // may not be available this early.
+      // This just shows a black screen
+      _dl_index = 0;
+      dl_CLEAR_COLOR(0);
+      dl_CLEAR(1, 1, 1); // color, stencil, tag
+      dl_DISPLAY();
 
-        // Enable output bits on LCD outputs
-        // Encoded as 3 values in 3 groups of 3 bits.
-        // 0b0000_000R_RRGG_GBBB
-        //                   --- Number of bits used for Blue
-        //               ----    Number of bits used for Green
-        //           ----        Number of bits used for Red
-        //   --------            Reserved
-        // If set to 0 (default), the EVE uses 8 bits (FT812/FT813) or 6 bits
-        // (FT810/FT811).
-        // This was commented out in the original code
-        //REG_Write_16(REG_OUTBITS, _profile._outbits);
+      // Tell the EVE that it can swap display lists at the next available
+      // frame boundary.
+      // TODO: Make this a parameter for Begin()?
+      RegWrite32(REG_DLSWAP, DLSWAP_FRAME);
 
-        // Touch screen initialization
-        if (!TouchInit())
-        {
-            // TODO: in at the top, out at the bottom
-            return false;
-        }
+      // Enable the DISP line of the LCD.
+      // TODO: Is this specific to CFA10099?
+      RegWrite16(REG_GPIOX, RegRead16(REG_GPIOX) | 0x8000);
 
-        // TODO: Audio off
+      // Now start clocking the data to the LCD panel
+      RegWrite8(REG_PCLK, _profile._pclk);
 
-        // Write the initial display list directly to RAM_DL; the coprocessor
-        // may not be available this early.
-        // This just shows a black screen
-        _dl_index = 0;
-        dl_CLEAR_COLOR(0);
-        dl_CLEAR(1, 1, 1); // color, stencil, tag
-        dl_DISPLAY();
+      // Initialize backlight
+      // TODO: Make these into parameter for Begin()?
+      RegWrite16(REG_PWM_HZ, 300);
+      RegWrite8(REG_PWM_DUTY, 32);
 
-        // Tell the EVE that it can swap display lists at the next available
-        // frame boundary.
-        // TODO: Make this a parameter for Begin()?
-        RegWrite32(REG_DLSWAP, DLSWAP_FRAME);
+      // TODO: Calibrate touch screen if necessary
 
-        // Enable the DISP line of the LCD.
-        // TODO: Is this specific to CFA10099?
-        RegWrite16(REG_GPIOX, RegRead16(REG_GPIOX) | 0x8000);
-
-        // Now start clocking the data to the LCD panel
-        RegWrite8(REG_PCLK, _profile._pclk);
-
-        // Initialize backlight
-        // TODO: Make these into parameter for Begin()?
-        RegWrite16(REG_PWM_HZ, 250);
-        RegWrite8(REG_PWM_DUTY, 128);
-
-        // TODO: Calibrate touch screen if necessary
-
-        return true;
+      return true;
     }
 
 protected:
@@ -1066,250 +1575,6 @@ protected:
     }
 
     /////////////////////////////////////////////////////////////////////////
-    // LOW LEVEL SPI CONTROL
-    /////////////////////////////////////////////////////////////////////////
-
-protected:
-    //-----------------------------------------------------------------------
-    // Read an 8-bit value
-    //
-    // No member variables are changed
-    uint8_t Receive8() const
-    {
-        uint8_t result;
-
-        // Send dummy value; the EVE returns the data
-        result = _spi.transfer(0);
-
-        return result;
-    }
-
-protected:
-    //-----------------------------------------------------------------------
-    // Read a 16-bit value in little-endian format
-    //
-    // No member variables are changed
-    uint16_t Receive16() const
-    {
-        uint16_t result;
-
-        // Send dummy values; the EVE returns the data
-        result =  (uint16_t)_spi.transfer(0);
-        result |= (uint16_t)_spi.transfer(0) << 8;
-
-        return result;
-    }
-
-protected:
-    //-----------------------------------------------------------------------
-    // Read a 32-bit value in little-endian format
-    //
-    // No member variables are changed
-    uint32_t Receive32() const
-    {
-        uint32_t result;
-
-        // Send dummy values; the EVE returns the data
-        result =  (uint32_t)_spi.transfer(0);
-        result |= (uint32_t)_spi.transfer(0) << 8;
-        result |= (uint32_t)_spi.transfer(0) << 16;
-        result |= (uint32_t)_spi.transfer(0) << 24;
-
-        return result;
-    }
-
-protected:
-    //-----------------------------------------------------------------------
-    // Write an 8 bit value
-    //
-    // No member variables are changed
-    //
-    // Yes it's a little silly to declare this function which is basically
-    // just an equivalent of the SPI transfer function but this way it makes
-    // multiple function calls more symmetrical in the code.
-    void Send8(
-        uint8_t value) const
-    {
-        _spi.transfer(value);
-    }
-
-protected:
-    //-----------------------------------------------------------------------
-    // Write a 16-bit value in little-endian format
-    //
-    // No member variables are changed
-    void Send16(
-        uint16_t value) const
-    {
-        _spi.transfer((uint8_t)(value));
-        _spi.transfer((uint8_t)(value >> 8));
-    }
-
-protected:
-    //-----------------------------------------------------------------------
-    // Write a 32 bit value in little-endian format
-    //
-    // No member variables are changed
-    void Send32(
-        uint32_t value) const
-    {
-        _spi.transfer((uint8_t)(value));
-        _spi.transfer((uint8_t)(value >> 8));
-        _spi.transfer((uint8_t)(value >> 16));
-        _spi.transfer((uint8_t)(value >> 24));
-    }
-
-protected:
-    //-----------------------------------------------------------------------
-    // Send data from a RAM buffer to the chip
-    //
-    // The function sends a block of data of the given size. If the number
-    // of requested bytes is not a multiple of 4, it sends extra nul bytes
-    // but doesn't read beyond the end of the buffer.
-    //
-    // The return value is the number of bytes that was sent to the EVE,
-    // which may be more than the requested length.
-    uint16_t                            // Returns number of bytes sent
-    SendBuffer(
-        const uint8_t *data,            // Data buffer to send
-        uint16_t len) const             // Buffer length
-    {
-        uint16_t result = 0;
-
-        const uint8_t *p = data;
-        while (len)
-        {
-            // Send in blocks of 4
-            for (unsigned i = 0; i < 4; i++)
-            {
-                uint8_t c = 0;
-
-                // If we've reached the end, send 0. Otherwise, get the
-                // next byte
-                if (len)
-                {
-                    c = *p++;
-                    len--;
-                }
-
-                Send8(c);
-            }
-
-            // We just sent 4 bytes
-            result += 4;
-        }
-
-        return result;
-    }
-
-protected:
-    //-----------------------------------------------------------------------
-    // Send a string, padded to a multiple of 4 bytes
-    //
-    // The function reads a string from RAM, and transfers it to the EVE
-    // It stops either when it finds the end of the source string, or when
-    // it has transferred the requested length minus one. Then it sends
-    // a nul terminator byte followed by however many bytes it takes to make
-    // the total number of transmitted bytes a multiple of 4.
-    //
-    // The return value is the number of bytes that was sent to the EVE,
-    // which may be longer than the string length.
-    //
-    // The maximum length parameter includes the nul terminator. If 0 is
-    // used, the function sends the entire string until it encounters the
-    // terminating \0.
-    uint16_t                            // Returns number of bytes sent
-    SendString(
-        const char *message,            // Characters to send, '\0' is end
-        uint16_t maxlen) const          // Max input length including \0
-    {
-        uint16_t result = 0;
-
-        // Initialize the remaining length
-        uint16_t len = maxlen; // Underflows for input value 0
-        if ((!len) || (len > MaxStringSize))
-        {
-            len = MaxStringSize;
-        }
-
-        const char *s = message;
-
-        // NOTE: The outer loop shouldn't have a conditional expression.
-        // The remaining length is checked at the end of the outer loop
-        // so that at least 4 bytes are sent, even if the string is empty.
-        for(;;)
-        {
-            // Send 4 bytes regardless of the input.
-            for (unsigned i = 0; i < 4; i++)
-            {
-                char c = '\0';
-
-                // Read a byte if allowed (if not allowed, the nul byte is sent)
-                if (len)
-                {
-                    c = *s++;
-
-                    // If the byte in our RAM was a terminator, don't read
-                    // any more bytes after the current one. It's okay to
-                    // send this one of course.
-                    if (!c)
-                    {
-                        len = 0;
-                    }
-                    else
-                    {
-                        len--;
-                    }
-                }
-
-                DBG_TRAFFIC("SendString 0x%02X\n", (uint8_t)c);
-
-                Send8((uint8_t)(c));
-            }
-
-            // We just sent 4 characters regardless of the input
-            result += 4;
-
-            // If there's nothing left to process (we reached end of string
-            // or the maximum length), break out.
-            if (!len)
-            {
-                break;
-            }
-        }
-
-        return result;
-    }
-
-protected:
-    //-----------------------------------------------------------------------
-    // Send a string from program memory
-    //
-    // Same as for RAM strings, but the string parameter is for strings
-    // stored in program memory. This takes some extra processing for some
-    // Arduinos; use the F() macro to pass a literal string or program
-    // memory string.
-    uint16_t                            // Returns number of bytes sent
-    SendStringF(
-        const __FlashStringHelper *message, // Characters to send, '\0' is end
-        uint16_t maxlen) const          // Max input length including \0
-    {
-        char buf[MaxStringSize];
-
-        if ((!maxlen) || (maxlen > sizeof(buf)))
-        {
-            maxlen = sizeof(buf);
-        }
-
-        // NOTE: because of the way we process the string when we send it
-        // to the EVE, there is no need to make sure that the string is
-        // nul-terminated after the copy below.
-        strncpy_P(buf, (const char *)message, maxlen);
-
-        return SendString(buf, maxlen);
-    }
-
-    /////////////////////////////////////////////////////////////////////////
     // START AND END TRANSACTIONS
     /////////////////////////////////////////////////////////////////////////
 
@@ -1329,13 +1594,12 @@ protected:
         // Then start a new transaction by selecting the chip.
         EndTransaction();
         // TODO: Delay?
-        Select(true);
+        _hal.Select(true);
 
         // Send the lower 3 bytes of the command in BIG ENDIAN order.
-        // NOTE: Don't use the Send functions here; they are little-endian.
-        _spi.transfer((uint8_t)(data24 >> 16));
-        _spi.transfer((uint8_t)(data24 >> 8));
-        _spi.transfer((uint8_t)(data24));
+        _hal.Send8((uint8_t)(data24 >> 16));
+        _hal.Send8((uint8_t)(data24 >> 8));
+        _hal.Send8((uint8_t)(data24));
     }
 
 protected:
@@ -1346,7 +1610,7 @@ protected:
     // the previous transaction.
     void EndTransaction()
     {
-        Select(false);
+        _hal.Select(false);
     }
 
 protected:
@@ -1367,7 +1631,7 @@ protected:
         // receiving the data.
         if (!write)
         {
-            _spi.transfer(0);
+            _hal.Send8(0);
         }
     }
 
@@ -1401,7 +1665,7 @@ public:
         BeginMemoryTransaction(address22, false);
 
         // Get the value
-        result = Receive8();
+        result = _hal.Receive8();
 
         DBG_TRAFFIC("Reg %X = %X\n", address22, result);
 
@@ -1423,7 +1687,7 @@ public:
         BeginMemoryTransaction(address22, false);
 
         // Get the value
-        result = Receive16();
+        result = _hal.Receive16();
 
         DBG_TRAFFIC("Reg %X = %X\n", address22, result);
 
@@ -1445,7 +1709,7 @@ public:
         BeginMemoryTransaction(address22, false);
 
         // Get the value
-        result = Receive32();
+        result = _hal.Receive32();
 
         DBG_TRAFFIC("Reg %X = %X\n", address22, result);
 
@@ -1479,7 +1743,7 @@ public:
                 return result;
             }
 
-            delay(delay_between_tries);
+            _hal.Delay(delay_between_tries);
 
             result--;
         }
@@ -1501,13 +1765,9 @@ public:
 
         BeginMemoryTransaction(address22, false);
 
-        // TODO: Use SPI block transfer function?
-        for (uint32_t i = 0; i < length; i++)
-        {
-            *destination++ = _spi.transfer(0);
-        }
+        address22 += _hal.ReceiveBuffer(destination, length);
 
-        return address22 + length;
+        return address22;
     }
 
 public:
@@ -1523,7 +1783,7 @@ public:
 
         BeginMemoryTransaction(address22, true);
 
-        _spi.transfer(value);
+        _hal.Send8(value);
     }
 
 public:
@@ -1539,7 +1799,7 @@ public:
 
         BeginMemoryTransaction(address22, true);
 
-        Send16(value);
+        _hal.Send16(value);
     }
 
 public:
@@ -1555,7 +1815,7 @@ public:
 
         BeginMemoryTransaction(address22, true);
 
-        Send32(value);
+        _hal.Send32(value);
     }
 
 public:
@@ -1571,13 +1831,11 @@ public:
 
         BeginMemoryTransaction(address22, true);
 
-        // TODO: Use SPI block transfer function?
-        for (uint32_t i = 0; i < length; i++)
-        {
-            _spi.transfer(*source++);
-        }
+        address22 += _hal.SendBuffer(source, length);
 
-        return address22 + length;
+        //address22 += _hal.SendAlignmentBytes(address22);
+
+        return address22;
     }
 
     /////////////////////////////////////////////////////////////////////////
@@ -1712,7 +1970,7 @@ public:
         BeginMemoryTransaction(RAM_CMD + _cmd_index.index(), true);
 
         // Send the command
-        Send32(command);
+        _hal.Send32(command);
 
         return _cmd_index += 4;
     }
@@ -1897,15 +2155,15 @@ public:
     // cmd_ and send the given command and parameters to the co-processor.
     //
     // 2 byte input value
-    #define V2(value) (Send16((uint16_t)(value)), result += 2)
+    #define V2(value) (_hal.Send16((uint16_t)(value)), result += 2)
     // 4 byte input value
-    #define V4(value) (Send32((uint32_t)(value)), result += 4)
+    #define V4(value) (_hal.Send32((uint32_t)(value)), result += 4)
     // String value
-    #define SS(value, maxlen) (result += SendString(value, maxlen))
+    #define SS(value, maxlen) (result += _hal.SendAlignmentBytes(_hal.SendString(value, maxlen)))
     // Program memory string value
-    #define SF(value, maxlen) (result += SendStringF(value, maxlen))
+    #define SF(value, maxlen, bufsize) (result += _hal.SendAlignmentBytes(_hal.SendStringF(value, maxlen, bufsize)))
     // Transfer from host RAM
-    #define MM(value, len) (result += SendBuffer(value, len))
+    #define MM(value, len) (result += _hal.SendAlignmentBytes(_hal.SendBuffer(value, len)))
     // 4 byte output value: Store Cmd index to parameter and bump cmd index
     #define Q4(name) ((*name = _cmd_index + result), V4(0))
     // Send command and data
@@ -1950,7 +2208,7 @@ public:
     CMD(DIAL,           (int16_t x16, int16_t y16, int16_t r16, OPT options, uint16_t val16),                                                           (V2(x16),V2(y16),V2(r16),V2(options),V2(val16),V2(0)                                )) // ProgGuide 5.39 p.207
     CMD(TOGGLE,         (int16_t x16, int16_t y16, int16_t w16, uint16_t font5, OPT options, uint16_t state16, const char *message, uint16_t len = 0),  (V2(x16),V2(y16),V2(w16),V2(font5),V2(options),V2(state16),SS(message, len)         )) // ProgGuide 5.40 p.210
     CMD(TEXT,           (int16_t x16, int16_t y16, int16_t font5, OPT options, const char *message, uint16_t len = 0),                                  (V2(x16),V2(y16),V2(font5),V2(options),SS(message, len)                             )) // ProgGuide 5.41 p.213
-    CMD(TEXTF,          (int16_t x16, int16_t y16, int16_t font5, OPT options, const __FlashStringHelper *message),                                     (V2(x16),V2(y16),V2(font5),V2(options),SF(message, 0)                               )) // ProgGuide 5.41 p.213
+    CMD(TEXTF,          (int16_t x16, int16_t y16, int16_t font5, OPT options, const __FlashStringHelper *message),                                     (V2(x16),V2(y16),V2(font5),V2(options),SF(message, 0, 0)                            )) // ProgGuide 5.41 p.213
     CMD(SETBASE,        (uint32_t b6),                                                                                                                  (V4(b6)                                                                             )) // ProgGuide 5.42 p.216
     CMD(NUMBER,         (int16_t x16, uint16_t y16, int16_t font5, OPT options, int32_t n32),                                                           (V2(x16),V2(y16),V2(font5),V2(options),V4(n32)                                      )) // ProgGuide 5.43 p.217
     CMD0(LOADIDENTITY                                                                                                                                                                                                                        ) // ProgGuide 5.44 p.220
