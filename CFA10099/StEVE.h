@@ -41,14 +41,25 @@ to work.
 
 ****************************************************************************/
 
+
 #pragma once
 
-#include <SPI.h>
 
-// Uncomment this to show detailed data about what the code does
-#define DBG_TRAFFIC(...) //DBG_STAT(__VA_ARGS__)
+/////////////////////////////////////////////////////////////////////////////
+// MACROS
+/////////////////////////////////////////////////////////////////////////////
+
+
+// Redefine these macros for debugging
+#define DBG_TRAFFIC(...)
 #define DBG_GEEK(...)
 #define DBG_STAT(...)
+
+
+/////////////////////////////////////////////////////////////////////////////
+// HARDWARE ABSTRACTION LAYER
+/////////////////////////////////////////////////////////////////////////////
+
 
 //---------------------------------------------------------------------------
 // Hardware Abstraction Layer for Steve
@@ -334,7 +345,7 @@ protected:
   SendStringF(
     const __FlashStringHelper* message, // Characters to send, '\0' is end
     uint16_t maxlen,                  // Max input length including \0
-    uint16_t bufsize)                  // Buffer size to use
+    uint16_t bufsize)                 // Buffer size to use
   {
     uint16_t result = 0;
     size_t len = strnlen_P((const char *)message, maxlen - 1);
@@ -372,9 +383,13 @@ protected:
 
 
 /////////////////////////////////////////////////////////////////////////////
-// HARDWARE ABSTRACTION LAYER FOR ARDUINO
+// HARDWARE ABSTRACTION LAYER SPECIFIC TO ARDUINO
 /////////////////////////////////////////////////////////////////////////////
 
+
+#ifdef ARDUINO
+
+#include <SPI.h>
 
 //---------------------------------------------------------------------------
 // Hardware Abstraction Layer for Arduino SPI
@@ -520,6 +535,8 @@ protected:
     delay(ms);
   }
 };
+
+#endif // ARDUINO
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -796,7 +813,7 @@ public:
         REG_ANA_COMP                = 0x302184,
         REG_SPI_WIDTH               = 0x302188,
 
-        // Touch engine (Compatibilit mode)
+        // Touch engine (Compatibility mode)
         REG_TOUCH_DIRECT_XY         = 0x30218C,
         REG_TOUCH_DIRECT_Z1Z2       = 0x302190,
 
@@ -905,8 +922,8 @@ public:
         ENC_CMD_VERTEX_TRANSLATE_X      = 0x2B000000,
         ENC_CMD_VERTEX_TRANSLATE_Y      = 0x2C000000,
         ENC_CMD_NOP                     = 0x2D000000,
-        ENC_CMD_VERTEX2F                = 0x40000000, // Encoded in ProgGuide as 1<<22
-        ENC_CMD_VERTEX2II               = 0x80000000, // Encoded in ProgGuide as 2<<22
+        ENC_CMD_VERTEX2F                = 0x40000000, // Encoded in ProgGuide as 1<<30
+        ENC_CMD_VERTEX2II               = 0x80000000, // Encoded in ProgGuide as 2<<30
 
         // Co-processor commands
         ENC_CMD_DLSTART                 = 0xFFFFFF00,
@@ -984,7 +1001,7 @@ public:
 
     }   ENC_CMD;
 
-    // Alpha test function for ALPHA_FUNC (ProgGuide 4.4 p.92) and
+    // Alpha test function for ALPHA_FUNC (ProgGuide 4.4 p.92)
     // and STENCIL_FUNC (ProgGuide 4.42 p.139)
     // See ProgGuide Table 5 p.92.
     typedef enum
@@ -1168,6 +1185,7 @@ public:
         CLOCK_EXT_x3_36MHz          = 0x03, // 3x multiplier
         CLOCK_EXT_x4_48MHz          = 0x44, // 4x multiplier and high PLL range
         CLOCK_EXT_x5_60MHz          = 0x45, // 5x multiplier and high PLL range
+
         // The data sheet doesn't mention the following; they were in the
         // demo code.
         CLOCK_EXT_x6_72MHz          = 0x46, // 6x multiplier and high PLL range
@@ -1205,11 +1223,13 @@ public:
         uint16_t    _hoffset;           // start of active line
         uint16_t    _hsync0;            // start of horizontal sync pulse
         uint16_t    _hsync1;            // end of horizontal sync pulse
+
         uint16_t    _vsize;             // active display height
         uint16_t    _vcycle;            // total number of lines per screen, incl pre/post
         uint16_t    _voffset;           // start of active screen
         uint16_t    _vsync0;            // start of vertical sync pulse
         uint16_t    _vsync1;            // end of vertical sync pulse
+
         uint8_t     _swizzle;           // FT800 output to LCD - pin order
         uint8_t     _pclkpol;           // LCD data is clocked in on this PCLK edge
         uint8_t     _pclk;              // Clock divisor
@@ -1368,10 +1388,10 @@ public:
     {
       // Wake up the EVE
       DBG_GEEK("Resetting\n");
-      _hal.Delay(20);                      // Wait a few ms before waking it up
-      _hal.Power(false);                   // Reset
-      _hal.Delay(6);                       // Hold for a little while
-      _hal.Power(true);                    // Power on
+      _hal.Delay(20);                   // Wait a few ms before waking it up
+      _hal.Power(false);                // Reset
+      _hal.Delay(6);                    // Hold for a little while
+      _hal.Power(true);                 // Power on
       _hal.Delay(21);
 
       // Select the chip and initialize the SPI bus in slow mode until
@@ -1384,7 +1404,7 @@ public:
       if (_profile._clock == CLOCK_INT)
       {
         DBG_TRAFFIC("Setting clock mode to internal\n");
-        //Command_Write(CLKINT);
+        HostCommand(HOSTCMD_CLKINT);
       }
       else
       {
@@ -1593,6 +1613,7 @@ protected:
         // Make sure the previous transaction has ended.
         // Then start a new transaction by selecting the chip.
         EndTransaction();
+
         // TODO: Delay?
         _hal.Select(true);
 
@@ -1625,6 +1646,7 @@ protected:
     {
         DBG_TRAFFIC("Address %X %s\n", address22, write ? "WRITE" : "READ");
 
+        // The address is passed by or-ing it to the 24 bit command.
         BeginTransaction((uint32_t)(write ? HOSTCMD_WRITE : HOSTCMD_READ) | address22);
 
         // In read mode, a dummy byte must be sent to the EVE before
@@ -1642,7 +1664,8 @@ protected:
         HOSTCMD hostcmd,                // Host command (not READ or WRITE)
         uint8_t parameter = 0)          // Parameter, if any
     {
-        // The parameter is passed in the second byte
+        // The parameter is passed as the second byte of the 24-bit host
+        // command value.
         return BeginTransaction((uint32_t)hostcmd | (uint32_t)parameter << 8);
     }
 
@@ -1683,7 +1706,7 @@ public:
     {
         uint16_t result;
 
-        // Send the 24-bit address and operation flag.
+        // Send the 22-bit address and operation flag.
         BeginMemoryTransaction(address22, false);
 
         // Get the value
@@ -1705,7 +1728,7 @@ public:
     {
         uint32_t result;
 
-        // Send the 24-bit address and operation flag.
+        // Send the 22-bit address and operation flag.
         BeginMemoryTransaction(address22, false);
 
         // Get the value
@@ -1821,6 +1844,9 @@ public:
 public:
     //-----------------------------------------------------------------------
     // Write a block of memory
+    //
+    // NOTE: It may be necessary to send alignment bytes if the length
+    // is not a multiple of 4.
     uint32_t                            // Returns next address to write to
     RegWriteBuffer(
         uint32_t address22,             // Address (22 bits; not checked)
@@ -1832,8 +1858,6 @@ public:
         BeginMemoryTransaction(address22, true);
 
         address22 += _hal.SendBuffer(source, length);
-
-        //address22 += _hal.SendAlignmentBytes(address22);
 
         return address22;
     }
@@ -1977,13 +2001,22 @@ public:
 
 public:
     //-----------------------------------------------------------------------
+    // Check if the co-processor is busy
+    bool                                // Returns true=busy, false=ready
+    CmdIsBusy()
+    {
+        return RegRead16(REG_CMD_READ) != _cmd_index.index();
+    }
+
+public:
+    //-----------------------------------------------------------------------
     // Wait until the co-processor has caught up.
     //
     // If the co-processor has nothing to do, the function will return
     // immediately.
     //
     // NOTE: Simply adding commands doesn't start the co-processor. You must
-    // call the Execute() function below.
+    // call the CmdExecute() function below.
     //
     // This can be used to wait for the end of a frame (if REG_DL_SWAP is
     // in mode DLSWAP_FRAME), and to retrieve the location where the next
@@ -1993,7 +2026,7 @@ public:
     {
         DBG_TRAFFIC("Waiting for coprocessor\n");
 
-        while (RegRead16(REG_CMD_READ) != _cmd_index.index())
+        while (CmdIsBusy())
         {
             // Nothing
         }
@@ -2030,7 +2063,7 @@ public:
 
 public:
     //-----------------------------------------------------------------------
-    // Macro to encodes a bit field in a uint32_t.
+    // Macro to encode a bit field in a uint32_t.
     //
     // This is used to encode the fields in the display list commands in
     // ProgGuide chapter 4.
@@ -2069,17 +2102,18 @@ public:
     // We also apply extra parentheses to avoid problems with expression
     // evaluation order.
     //
-    // The result may look pretty daunting but the optimizer will reduce it
-    // to code that's basically equivalent to (value & constant) << constant.
+    // The macro may look pretty daunting but the optimizer will reduce it
+    // to code that's basically equivalent to (value & constant) << constant
+    // so this should compile to some pretty small.
     #define N(value, leftbit, rightbit) ((((uint32_t)value) & ((1 << (((leftbit) - (rightbit)) + 1)) - 1)) << rightbit)
 
     //-----------------------------------------------------------------------
     // Functions for Display List commands
     //
-    // A single invocation of the macro generates:
+    // A single invocation of the macro expands to:
     // * A function (starting with ENC_...) to encode the bit fields into a
     //   uint32_t value
-    // * A function (starting with dl_...) to add an encoded command to the
+    // * A function (starting with  dl_...) to add an encoded command to the
     //   display list
     // * A function (starting with cmd_...) to add an encoded command to the
     //   command list for the co-processor.
@@ -2165,7 +2199,8 @@ public:
     // Transfer from host RAM
     #define MM(value, len) (result += _hal.SendAlignmentBytes(_hal.SendBuffer(value, len)))
     // 4 byte output value: Store Cmd index to parameter and bump cmd index
-    #define Q4(name) ((*name = _cmd_index + result), V4(0))
+    // Use NULL as parameter to ignore the output
+    #define Q4(name) ((name ? (*name = _cmd_index + result) : 0), V4(0))
     // Send command and data
     #define CMD(name, declaration, value) \
         CmdIndex cmd_##name declaration { Cmd(ENC_CMD_##name); int16_t result = 0; (value); return _cmd_index += result; }
