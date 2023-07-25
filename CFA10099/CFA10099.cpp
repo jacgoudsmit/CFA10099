@@ -137,6 +137,7 @@ void SerPrintFF(const __FlashStringHelper *fmt, ...);
 //#include "demos.h"
 
 #include "Steve.h"
+#include "SteveHAL_Arduino.h"
 
 //#include "VUDemo.h"
 #include "BounceDemo.h"

@@ -102,23 +102,25 @@ Module overview:
 * BT818: 1280x800, 24 bit RGB, 1MB RAM,  resistive  touch
 
 NOTE: The FT800 and FT801 (EVE1, 480x320, 18 bit RGB, 256K RAM) work mostly
-the same as the supported modules, but the memory map of the FT80X is
-different. Because of this, the FT800 and FT801 aren't supported. It may be
-possible to change the constants to make the library work for the FT80X chips
-as well, but this is currently not on the agenda.
+the same as the supported modules, however the memory map of the FT80X is
+different. Because of this, the FT800 and FT801 aren't supported for now.
 
 ****************************************************************************/
 
-
 #pragma once
 
+/////////////////////////////////////////////////////////////////////////////
+// INCLUDES
+/////////////////////////////////////////////////////////////////////////////
+
+#include "SteveHAL.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // MACROS
 /////////////////////////////////////////////////////////////////////////////
 
-
-// Redefine these macros for debugging
+// Redefine these macros for debugging. They are called with printf-like
+// parameters.
 #ifndef DBG_TRAFFIC
 #define DBG_TRAFFIC(...)
 #endif
@@ -129,460 +131,14 @@ as well, but this is currently not on the agenda.
 #define DBG_STAT(...)
 #endif
 
+// Define _countof. This macro definition is usually in stdlib.h.
 #ifndef _countof
 #define _countof(array) (sizeof(array) / sizeof(array[0]))
 #endif
 
-
-/////////////////////////////////////////////////////////////////////////////
-// HARDWARE ABSTRACTION LAYER
-/////////////////////////////////////////////////////////////////////////////
-
-
-//---------------------------------------------------------------------------
-// Hardware Abstraction Layer for Steve
-//
-// This abstract class provides the communication from the host to the 
-// EVE chip, through SPI or QSPI.
-//
-// The functions in the class are only called by the Steve class which is
-// declared as friend class.
-//
-// Platform-specific subclasses should implement the abstract virtual
-// functions, and a constructor that calls the constructor in this class.
-//
-// Some default implementations of virtual functions can be overridden by
-// subclasses; for example if a platform has an efficient way to send 4
-// bytes at a time, its subclass can override the Send32 function.
-class SteveHAL
-{
-  friend class Steve;
-
-protected:
-  //-------------------------------------------------------------------------
-  // Constructor
-  //
-  // The constructor is protected so it can only be called by subclasses.
-  SteveHAL()
-  {
-    // Nothing
-  }
-
-protected:
-  //-------------------------------------------------------------------------
-  // Initialize the communication
-  //
-  // This is called by Steve to initialize the communication with the EVE
-  // chip.
-  //
-  // According to some documentation, in slow mode (until the EVE clock is
-  // running, the SPI clock should run no faster than 11 MHz. After the EVE
-  // chip is initialized, the SPI bus can use up to 30 MHz.
-  virtual void Init(
-    bool slow = false) = 0;             // True=use slow speed for early init
-
-protected:
-  //-------------------------------------------------------------------------
-  // Pause or resume communication
-  //
-  // This is called by Steve to pause or resume communication to the
-  // EVE chip.
-  virtual void Pause(
-    bool pause) = 0;                    // True=pause, false=resume
-
-protected:
-  //-------------------------------------------------------------------------
-  // Turn the power on or off
-  //
-  // This is called by Steve to reset the chip as part of the initialization
-  // sequence.
-  //
-  // NOTE: The pin is marked !PD (Power Down Not) so the pin is set to LOW
-  // for a 'false' parameter, HIGH for 'true'.
-  virtual void Power(
-    bool enable) = 0;                   // True=on (!PD high) false=off/reset
-
-protected:
-  //-------------------------------------------------------------------------
-  // Select or de-select the chip
-  //
-  // This is called by Steve to select or de-select the chip.
-  //
-  // The SPI interface on the EVE chips is not just used to let the chip
-  // listen or ignore the data on the SPI bus, but also resets a sequencer
-  // inside the chip that makes it start listening to host commands.
-  // Some host commands initiate transfers of multiple bytes, and !CS needs
-  // to stay active during the entire transfer.
-  //
-  // The HAL class keeps track of whether the call to this function actually
-  // changed the state of the !CS line or not, and the return value is
-  // used by the Steve class to make sure that the chip is the correct state.
-  virtual bool                          // Returns true if !CS line changed
-  Select(
-    bool enable) = 0;                   // True=select (!CS low) false=de-sel
-
-protected:
-  //-------------------------------------------------------------------------
-  // Transfer data to and from the EVE chip
-  virtual uint8_t                       // Returns received byte
-  Transfer(
-    uint8_t value) = 0;                 // Byte to send
-
-protected:
-  //-------------------------------------------------------------------------
-  // Send an 8-bit value
-  virtual void Send8(
-    uint8_t value)                      // Value to send
-  {
-    Transfer(value);
-  }
-
-protected:
-  //-------------------------------------------------------------------------
-  // Send a 16-bit value in little-endian format
-  //
-  // The least significant byte is sent first.
-  virtual void Send16(
-    uint16_t value)                     // Value to send
-  {
-    Transfer((uint8_t)(value));
-    Transfer((uint8_t)(value >> 8));
-  }
-
-protected:
-  //-------------------------------------------------------------------------
-  // Send a 32-bit value in little-endian format
-  //
-  // The least significant byte is sent first.
-  virtual void Send32(
-    uint32_t value)                     // Value to send
-  {
-    Transfer((uint8_t)(value));
-    Transfer((uint8_t)(value >> 8));
-    Transfer((uint8_t)(value >> 16));
-    Transfer((uint8_t)(value >> 24));
-  }
-
-protected:
-  //-------------------------------------------------------------------------
-  // Receive an 8-bit value
-  virtual uint8_t                       // Returns incoming value
-  Receive8()
-  {
-    return Transfer(0);
-  }
-
-protected:
-  //-------------------------------------------------------------------------
-  // Receive a 16-bit value in little-endian format
-  //
-  // The least significant byte is received first.
-  virtual uint16_t                      // Returns incoming value
-  Receive16()
-  {
-    uint16_t  result;
-
-    result =  (uint32_t)Transfer(0);
-    result |= (uint32_t)Transfer(0) << 8;
-
-    return result;
-  }
-
-protected:
-  //-------------------------------------------------------------------------
-  // Receive a 32-bit value in little-endian format
-  //
-  // The least significant byte is received first.
-  virtual uint32_t                      // Returns incoming value
-  Receive32()
-  {
-    uint32_t  result;
-
-    result =  (uint32_t)Transfer(0);
-    result |= (uint32_t)Transfer(0) << 8;
-    result |= (uint32_t)Transfer(0) << 16;
-    result |= (uint32_t)Transfer(0) << 24;
-
-    return result;
-  }
-
-protected:
-  //-------------------------------------------------------------------------
-  // Receive a buffer
-  virtual uint32_t                      // Returns number of bytes received
-  ReceiveBuffer(
-    uint8_t *buffer,                    // Buffer to receive to
-    uint32_t len)                       // Number of bytes to receive
-  {
-    uint32_t result;
-    uint8_t *t = buffer;
-
-    for (result = 0; result < len; result++)
-    {
-      *t++ = Receive8();
-    }
-
-    return result;
-  }
-
-protected:
-  //-------------------------------------------------------------------------
-  // Send zero-bytes for alignment
-  //
-  // This takes a number of previously transmitted bytes and transmit the
-  // required number of extra bytes to get the number to a multiple of 4.
-  virtual uint32_t                      // Returns updated number bytes sent
-  SendAlignmentBytes(
-    uint32_t num)                       // Previous number of bytes sent
-  {
-    uint32_t result = num;
-
-    while (result % 4)
-    {
-      Send8(0);
-      result++;
-    }
-
-    return result;
-  }
-
-protected:
-  //-------------------------------------------------------------------------
-  // Send data from a RAM buffer to the chip
-  //
-  // The function sends a block of data of the given size.
-  virtual uint32_t                      // Returns number of bytes sent
-  SendBuffer(
-    const uint8_t* data,                // Data buffer to send
-    uint32_t len)                       // Buffer length
-  {
-    uint32_t result;
-
-    const uint8_t* p = data;
-    for (result = 0; result < len; result++)
-    {
-      Send8(*p++);
-    }
-
-    return result;
-  }
-
-protected:
-  //-------------------------------------------------------------------------
-  // Send a nul-terminated string
-  //
-  // The function reads a string from RAM, and transfers it to the EVE
-  // It stops either when it finds the end of the source string, or when
-  // it reaches the maximum length minus one. Then it sends a byte 0x00.
-  //
-  // The maximum length parameter includes the nul-terminator byte. If 0 is
-  // used for the maximum length parameter, the value is interpreted as
-  // "65536".
-  //
-  // If the pointer is NULL, an empty string is sent.
-  virtual uint16_t                      // Returns number of bytes sent
-  SendString(
-    const char* message,                // Characters to send, '\0' is end
-    uint16_t maxlen)                    // Max input length including \0
-  {
-    uint16_t result;
-    const char* s = message;
-
-    // Replace the pointer if it's NULL
-    if (!s)
-    {
-      s = "";
-    }
-
-    // Send the non-nul characters. Note: if maxlen is 0, maxlen - 1
-    // underflows to 65535.
-    for (result = 0; result < maxlen - 1; result++)
-    {
-      char c = *s++;
-
-      if (!c)
-      {
-        break;
-      }
-
-      Send8(c);
-    }
-
-    // Always send nul terminator byte
-    Send8(0);
-    result += 1;
-
-    return result;
-  }
-
-protected:
-  //-------------------------------------------------------------------------
-  // Wait for at least the requested time
-  virtual void
-  Delay(
-    uint32_t ms) = 0;                   // Number of milliseconds to wait
-};
-
-
-/////////////////////////////////////////////////////////////////////////////
-// HARDWARE ABSTRACTION LAYER SPECIFIC TO ARDUINO
-/////////////////////////////////////////////////////////////////////////////
-
-
-#ifdef ARDUINO
-
-#include <SPI.h>
-
-//---------------------------------------------------------------------------
-// Minimal Hardware Abstraction Layer for Arduino
-//
-// This should be compatible with basically all variations of Arduino:
-// * It uses a single SPI port (not dual SPI or quad SPI).
-// * There are no optimizations for sending and receiving multiple successive
-//   bytes.
-// * No interrupts or DMA are used.
-// * Only a single SPI clock speed is used (up to 8 MHz). The speed is not
-//   switched to a higher frequency once the EVE is ready for it.
-class SteveHAL_Arduino : public SteveHAL
-{
-private:
-  //-------------------------------------------------------------------------
-  // Constants and initialization parameters
-
-  SPIClass         &_spi;               // SPI instance
-  const SPISettings _spi_settings;      // SPI settings
-  const int         _pin_cs;            // Chip Select Not Pin
-  const int         _pin_pd;            // Power Down Not Pin
-
-private:
-  //-------------------------------------------------------------------------
-  // State data
-
-  bool              _selected;          // True if chip currently selected
-
-public:
-  //-------------------------------------------------------------------------
-  // Constructor
-  SteveHAL_Arduino(
-    SPIClass &spi,                      // SPI port
-    uint32_t spi_clock,                 // SPI clock speed
-    int pin_cs,                         // !CS pin
-    int pin_pd)                         // !PD pin
-    : SteveHAL()
-    , _spi(spi)
-    , _spi_settings(spi_clock, MSBFIRST, SPI_MODE0)
-    , _pin_cs(pin_cs)
-    , _pin_pd(pin_pd)
-  {
-    // Set the output pins before switching the pins to output, to
-    // avoid glitches
-    _selected = true; // Make sure the CS pin is changed next
-    Select(false); // De-select
-    Power(true); // Power on
-
-    // Configure the Power Down Not pin; it's also used as reset.
-    // This will power up the panel.
-    if (_pin_pd >= 0)
-    {
-      pinMode(_pin_pd, OUTPUT);
-    }
-
-    // Finally configure the chip select pin
-    if (_pin_cs >= 0)
-    {
-      pinMode(_pin_cs, OUTPUT);
-    }
-  }
-
-protected:
-  //-------------------------------------------------------------------------
-  // Initialize the communication
-  void Init(
-    bool slow = false) override         // True=use slow speed for early init
-  {
-    (void)slow; // Ignored
-
-    DBG_TRAFFIC("beginTransaction\n");
-    _spi.beginTransaction(_spi_settings);
-  }
-
-protected:
-  //-------------------------------------------------------------------------
-  // Pause or resume communication
-  void Pause(
-    bool pause) override                // True=pause, false=resume
-  {
-    if (pause)
-    {
-      DBG_TRAFFIC("endTransaction\n");
-      _spi.endTransaction();
-    }
-    else
-    {
-      Init();
-    }
-  }
-
-protected:
-  //-------------------------------------------------------------------------
-  // Turn the power on or off
-  void Power(
-    bool enable) override               // True=on (!PD high) false=off/reset
-  {
-    // Set the pin HIGH to power up
-    digitalWrite(_pin_pd, enable ? HIGH : LOW);
-  }
-
-protected:
-  //-------------------------------------------------------------------------
-  // Select or de-select the chip
-  bool                                  // Returns true if !CS line changed
-  Select(
-    bool enable) override               // True=select (!CS low) false=de-sel
-  {
-    bool result = (enable != _selected);
-
-    if (result)
-    {
-      _selected = enable;
-
-      DBG_TRAFFIC("Select %u\n", !!enable);
-
-      // Set the pin LOW to enable the chip
-      digitalWrite(_pin_cs, enable ? LOW : HIGH);
-    }
-
-    return result;
-  }
-
-protected:
-  //-------------------------------------------------------------------------
-  // Transfer data to and from the EVE chip
-  virtual uint8_t                       // Returns received byte
-  Transfer(
-    uint8_t value) override             // Byte to send
-  {
-    return _spi.transfer(value);
-  }
-
-protected:
-  //-------------------------------------------------------------------------
-  // Wait for at least the requested time
-  virtual void
-  Delay(
-    uint32_t ms) override               // Number of milliseconds to wait
-  {
-    delay(ms);
-  }
-};
-
-#endif // ARDUINO
-
-
 /////////////////////////////////////////////////////////////////////////////
 // STATIC TYPESAFE EVE CHIP CONTROL CLASS
 /////////////////////////////////////////////////////////////////////////////
-
 
 class Steve
 {
@@ -625,7 +181,6 @@ public:
   // Pseudo address (index) for errors that occurred during a co-processor
   // command
   const static uint16_t READ_INDEX_ERROR = 0x0FFF;
-
 
   //=========================================================================
   // HELPER CLASS REPRESENTING AN ADDRESS IN A MEMORY AREA WITH WRAPPING
@@ -1004,7 +559,7 @@ public:
     // Internal control
     REG_BIST_EN                         = 0x302174,     //                      (rw1)   BIST memory mapping enable (not in [PG*])
     REG_TRIM                            = 0x302180,     // [PG2 p88]            (rw8)   Internal relaxation clock trimming (not on EVE4?)
-    REG_ANA_COMP                        = 0x302184,     //                      (rw8)   Analog control register (not documented in [PG*])
+    REG_ANA_COMP                        = 0x302184,     //                      (rw8)   Analog control register (not in [PG*])
     REG_SPI_WIDTH                       = 0x302188,     // [PG2 p88][PG34 p50]  (rw3)   QSPI bus width setting
 
     //// 0x30902194 - 0x302560 Reserved
@@ -1654,10 +1209,6 @@ protected:
 public:
   //-------------------------------------------------------------------------
   // Constructor
-  //
-  // NOTE: Although the pin numbers are optional, the display probably
-  // won't function without them, unless you create a subclass that
-  // controls those lines by overriding the appropriate functions.
   Steve(
     const DisplayProfile &profile,      // Display profile
     SteveHAL &hal)                      // Hardware functions
@@ -1939,8 +1490,10 @@ public:
     //   --------            Reserved
     // If set to 0 (default), the EVE uses 8 bits (FT812/FT813) or 6 bits
     // (FT810/FT811).
-    // This was commented out in the original code
-    //REG_Write_16(REG_OUTBITS, _profile._outbits);
+    if (_profile._outbits)
+    {
+      RegWrite16(REG_OUTBITS, _profile._outbits);
+    }
 
     // Touch screen initialization
     if (!TouchInit())
@@ -2488,7 +2041,7 @@ public:
   // This is used to encode the fields in the display list commands in
   // ProgGuide chapter 4.
   //
-  // The Programmer's Guide shows the fields with the leftmost
+  // The Programmer's Guides show the fields with the leftmost
   // and rightmost bit numbers, so it makes sense to use the left and
   // right bit numbers of the fields for the encoding expression.
   //
@@ -2531,7 +2084,7 @@ public:
   //-------------------------------------------------------------------------
   // Functions for Display List commands
   //
-  // A single invocation of the macro expands to:
+  // A single invocation of the following macro expands to:
   // * A function (starting with ENC_...) to encode the bit fields into a
   //   uint32_t value
   // * A function (starting with  dl_...) to add an encoded command to the
@@ -2631,6 +2184,8 @@ public:
   // the commands, then retrieve the output data using CmdRead with the
   // command index values that are returned by the function)
   #define CMDOUT CMD
+  #define CMDOUT34 CMD34
+  #define CMDOUT4 CMD4
   // Send command that only works for some types of EVE chips
   // (May possibly be changed later)
   #define CMD2 CMD
@@ -2684,7 +2239,7 @@ public:
   CMD34(ROTATEAROUND,     (int32_t x32, int32_t y32, int32_t a32, int32_t s32),                                                                           (V4(x32), V4(y32),V4(a32),V4(s32)                                                   )) //           [PG34 p157] (EVE3/EVE4)
   CMD(TRANSLATE,          (int32_t tx32, int32_t ty32),                                                                                                   (V4(tx32),V4(ty32)                                                                  )) // ProgGuide 5.51 p.226
   CMDOUT(CALIBRATE,       (CmdIndex *xresult32),                                                                                                          (Q4(xresult32)                                                                      )) // ProgGuide 5.52 p.227
-  CMD34(CALIBRATESUB,     (uint16_t x16, uint16_t y16, uint16_t w16, uint16_t h16, CmdIndex *xresult32),                                                  (V2(x16),V2(y16),V2(w16),V2(h16),Q4(xresult32)                                      )) //           [PG34 p159] (EVE3/EVE4)
+  CMDOUT34(CALIBRATESUB,  (uint16_t x16, uint16_t y16, uint16_t w16, uint16_t h16, CmdIndex *xresult32),                                                  (V2(x16),V2(y16),V2(w16),V2(h16),Q4(xresult32)                                      )) //           [PG34 p159] (EVE3/EVE4)
   CMD(SETROTATE,          (uint32_t r32),                                                                                                                 (V4(r32)                                                                            )) // ProgGuide 5.53 p.228
   CMD(SPINNER,            (int16_t x16, int16_t y16, uint16_t style2, uint16_t scale2),                                                                   (V2(x16),V2(y16),V2(style2),V2(scale2)                                              )) // ProgGuide 5.54 p.229
   CMD(SCREENSAVER,        (),                                                                                                                             (0                                                                                  )) // ProgGuide 5.55 p.233
@@ -2708,7 +2263,7 @@ public:
   CMD34(FLASHUPDATE,      (uint32_t dst32, uint32_t src32, uint32_t num32),                                                                               (V4(dst32),V4(src32),V4(num32)                                                      )) //...........[PG34 p177] (EVE3/EVE4)
   CMD34(FLASHDETACH,      (),                                                                                                                             (0                                                                                  )) //           [PG34 p177] (EVE3/EVE4)
   CMD34(FLASHATTACH,      (),                                                                                                                             (0                                                                                  )) //           [PG34 p178] (EVE3/EVE4)
-  CMD34(FLASHFAST,        (CmdIndex *xresult32),                                                                                                          (Q4(xresult32)                                                                      )) //           [PG34 p178] (EVE3/EVE4)
+  CMDOUT34(FLASHFAST,     (CmdIndex *xresult32),                                                                                                          (Q4(xresult32)                                                                      )) //           [PG34 p178] (EVE3/EVE4)
   CMD34(FLASHSPIDESEL,    (),                                                                                                                             (0                                                                                  )) //           [PG34 p179] (EVE3/EVE4)
   CMD34(FLASHSPITX,       (uint32_t num32, const uint8_t *data),                                                                                          (V4(num32),MM(data,num32)                                                           )) //           [PG34 p179] (EVE3/EVE4)
   CMD34(FLASHSPIRX,       (uint32_t ptr32, uint32_t num32),                                                                                               (V4(ptr32),V4(num32)                                                                )) //           [PG34 p179] (EVE3/EVE4)
@@ -2724,7 +2279,8 @@ public:
   CMD34(ANIMFRAME,        (int16_t x16, int16_t y16, uint32_t aoptr32, uint32_t frame32),                                                                 (V2(x16),V2(y16),V4(aoptr32),V4(frame32)                                            )) //           [PG34 p186] (EVE3/EVE4)
   CMD34(ANIMFRAMERAM,     (int16_t x16, int16_t y16, uint32_t aoptr32, uint32_t frame32),                                                                 (V2(x16),V2(y16),V4(aoptr32),V4(frame32)                                            )) //           [PG34 p186] (EVE4)
   CMD34(SYNC,             (),                                                                                                                             (0                                                                                  )) //           [PG34 p187] (EVE3/EVE4)
-  CMD34(BITMAP_TRANSFORM, (int32_t x032, int32_t y032, int32_t x132, int32_t y132, int32_t x232, int32_t y232, int32_t tx032, int32_t ty032, int32_t tx132, int32_t ty132, int32_t tx232, int32_t ty232, CmdIndex *xresult16),
+  CMDOUT34(BITMAP_TRANSFORM,
+                          (int32_t x032, int32_t y032, int32_t x132, int32_t y132, int32_t x232, int32_t y232, int32_t tx032, int32_t ty032, int32_t tx132, int32_t ty132, int32_t tx232, int32_t ty232, CmdIndex *xresult16),
                                                                                                                                                           (V4(x032),V4(y032),V4(x132),V4(y132),V4(x232),V4(y232),V4(tx032),V4(ty032),V4(tx132),V4(ty132),V4(tx232),V4(ty232),Q4(xresult16)
                                                                                                                                                                                                                                               )) //           [PG34 p188] (EVE3/EVE4)
   CMD4(TESTCARD,          (),                                                                                                                             (0                                                                                  )) //           [PG34 p189] (EVE4)
@@ -2734,10 +2290,10 @@ public:
   CMD4(CALLLIST,          (uint32_t a32),                                                                                                                 (V4(a32)                                                                            )) //           [PG34 p192] (EVE4)
   CMD4(RETURNCMD,         (),                                                                                                                             (0                                                                                  )) //           [PG34 p192] (EVE4)
   CMD4(FONTCACHE,         (uint32_t font32, int32_t ptr32, uint32_t num32),                                                                               (V4(font32),V4(ptr32),V4(num32)                                                     )) //           [PG34 p193] (EVE4)
-  CMD4(FONTCACHEQUERY,    (CmdIndex *xtotal32, CmdIndex *xused32),                                                                                        (Q4(xtotal32),Q4(xused32)                                                           )) //           [PG34 p194] (EVE4)
-  CMD4(GETIMAGE,          (CmdIndex *xsrc32, CmdIndex *xfmt32, CmdIndex *xw32, CmdIndex *xh32, CmdIndex *xpalette32),                                     (Q4(xsrc32),Q4(xfmt32),Q4(xw32),Q4(xh32),Q4(xpalette32)                             )) //           [PG34 p194] (EVE4)
+  CMDOUT4(FONTCACHEQUERY, (CmdIndex *xtotal32, CmdIndex *xused32),                                                                                        (Q4(xtotal32),Q4(xused32)                                                           )) //           [PG34 p194] (EVE4)
+  CMDOUT4(GETIMAGE,       (CmdIndex *xsrc32, CmdIndex *xfmt32, CmdIndex *xw32, CmdIndex *xh32, CmdIndex *xpalette32),                                     (Q4(xsrc32),Q4(xfmt32),Q4(xw32),Q4(xh32),Q4(xpalette32)                             )) //           [PG34 p194] (EVE4)
   CMD4(HSF,               (uint32_t w32),                                                                                                                 (V4(w32)                                                                            )) //           [PG34 p195] (EVE4)
-  CMD4(PCLKFREQ,          (uint32_t ftarget32, int32_t rounding32, CmdIndex *xfactual32),                                                                 (V4(ftarget32),V4(rounding32),Q4(xfactual32)                                        )) //           [PG34 p196] (EVE4)
+  CMDOUT4(PCLKFREQ,       (uint32_t ftarget32, int32_t rounding32, CmdIndex *xfactual32),                                                                 (V4(ftarget32),V4(rounding32),Q4(xfactual32)                                        )) //           [PG34 p196] (EVE4)
 
   #undef CMD4
   #undef CMD34
@@ -3048,3 +2604,7 @@ public:
     return CmdDlFinish();
   }
 };
+
+/////////////////////////////////////////////////////////////////////////////
+// END
+/////////////////////////////////////////////////////////////////////////////
