@@ -10,7 +10,8 @@ static const uint8_t vu[] = {
   // downloaded from BridgeTek.com
   // The file MUST be in the src subdirectory and the name MUST end in .h.
   // Arduino made those rules, not me.
-  #include "src/PPMDemo/Jac/jac_480x80_RGB565.rawh.h"
+  //#include "src/PPMDemo/Jac/jac_480x80_RGB565.rawh.h"
+  #include "src/PPMDemo/Jac/jac_480x80_RGB565_transparent_480x80_ARGB1555.rawh.h"
   //#include "src/PPMDemo/Philip/philip_480x80_RGB565.rawh.h"
   //#include "src/PPMDemo/Svilen/svilen_480x80_RGB565.rawh.h"
 };

@@ -22,6 +22,8 @@ class BmpDemo
   int16_t         _ypos;
 
 public:
+  //-------------------------------------------------------------------------
+  // Constructor
   BmpDemo(
     Steve &eve)
     : _eve(eve)
@@ -30,7 +32,7 @@ public:
   }
 
 public:
-  //-----------------------------------------------------------------------
+  //-------------------------------------------------------------------------
   // Initialize the demo
   //
   // This should be called from the setup() function
@@ -67,7 +69,7 @@ public:
   }
 
 public:
-  //-----------------------------------------------------------------------
+  //-------------------------------------------------------------------------
   // Add commands for the demo to the list
   //
   // This should be called from the loop() function

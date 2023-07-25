@@ -28,15 +28,15 @@
     <BootSegment>0</BootSegment>
     <AsfFrameworkConfig>
       <framework-data>
-  <options />
-  <configurations />
-  <files />
-  <documentation help="" />
-  <offline-documentation help="" />
-  <dependencies>
-    <content-extension eid="atmel.asf" uuidref="Atmel.ASF" version="3.44.1" />
-  </dependencies>
-</framework-data>
+        <options />
+        <configurations />
+        <files />
+        <documentation help="" />
+        <offline-documentation help="" />
+        <dependencies>
+          <content-extension eid="atmel.asf" uuidref="Atmel.ASF" version="3.44.1" />
+        </dependencies>
+      </framework-data>
     </AsfFrameworkConfig>
     <preserveEEPROM>true</preserveEEPROM>
     <ResetRule>0</ResetRule>
@@ -73,7 +73,6 @@
     <ListValues>
       <Value>../../../CFA10099</Value>
       <Value>C:/Program Files (x86)/Arduino/hardware/teensy/avr/libraries/SPI</Value>
-      <Value>C:/Program Files (x86)/Arduino/hardware/teensy/avr/libraries/SD/src</Value>
       <Value>C:/Program Files (x86)/Arduino/hardware/teensy/avr/cores/teensy4</Value>
       <Value>C:/Program Files (x86)/Arduino/hardware/teensy/avr/cores/teensy4/avr</Value>
       <Value>C:/Program Files (x86)/Arduino/hardware/teensy/avr/cores/teensy4/debug</Value>
@@ -115,7 +114,6 @@
     <ListValues>
       <Value>../../../CFA10099</Value>
       <Value>C:/Program Files (x86)/Arduino/hardware/teensy/avr/libraries/SPI</Value>
-      <Value>C:/Program Files (x86)/Arduino/hardware/teensy/avr/libraries/SD/src</Value>
       <Value>C:/Program Files (x86)/Arduino/hardware/teensy/avr/cores/teensy4</Value>
       <Value>C:/Program Files (x86)/Arduino/hardware/teensy/avr/cores/teensy4/avr</Value>
       <Value>C:/Program Files (x86)/Arduino/hardware/teensy/avr/cores/teensy4/debug</Value>
@@ -685,7 +683,6 @@ build.keylayout=US_ENGLISH
     <ListValues>
       <Value>../../../CFA10099</Value>
       <Value>C:/Program Files (x86)/Arduino/hardware/teensy/avr/libraries/SPI</Value>
-      <Value>C:/Program Files (x86)/Arduino/hardware/teensy/avr/libraries/SD/src</Value>
       <Value>C:/Program Files (x86)/Arduino/hardware/teensy/avr/cores/teensy4</Value>
       <Value>C:/Program Files (x86)/Arduino/hardware/teensy/avr/cores/teensy4/avr</Value>
       <Value>C:/Program Files (x86)/Arduino/hardware/teensy/avr/cores/teensy4/debug</Value>
@@ -727,7 +724,6 @@ build.keylayout=US_ENGLISH
     <ListValues>
       <Value>../../../CFA10099</Value>
       <Value>C:/Program Files (x86)/Arduino/hardware/teensy/avr/libraries/SPI</Value>
-      <Value>C:/Program Files (x86)/Arduino/hardware/teensy/avr/libraries/SD/src</Value>
       <Value>C:/Program Files (x86)/Arduino/hardware/teensy/avr/cores/teensy4</Value>
       <Value>C:/Program Files (x86)/Arduino/hardware/teensy/avr/cores/teensy4/avr</Value>
       <Value>C:/Program Files (x86)/Arduino/hardware/teensy/avr/cores/teensy4/debug</Value>

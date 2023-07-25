@@ -112,8 +112,10 @@ void SerPrintFF(const __FlashStringHelper *fmt, ...);
 // 
 //     Serial.print(tmp);
 // }
-//#define DBG_STAT(fmt, ...) SerPrintFF(F(fmt ""), ##__VA_ARGS__)
+#define DBG_STAT(fmt, ...) SerPrintFF(F(fmt ""), ##__VA_ARGS__)
 //#define DBG_GEEK(fmt, ...) SerPrintFF(F(fmt ""), ##__VA_ARGS__)
+// #define DBG_TRAFFIC(fmt, ...) if (dbg_traffic) SerPrintFF(F(fmt ""), ##__VA_ARGS__)
+// bool dbg_traffic = false;
 
 // Definitions for our display.
 //#include "CFA10099_defines.h"
@@ -136,11 +138,11 @@ void SerPrintFF(const __FlashStringHelper *fmt, ...);
 
 #include "Steve.h"
 
-#include "VUDemo.h"
+//#include "VUDemo.h"
 #include "BounceDemo.h"
-#include "BmpDemo.h"
+//#include "BmpDemo.h"
 
-#include "CLOUDS.h"
+//#include "CLOUDS.h"
 
 
 //---------------------------------------------------------------------------
@@ -162,32 +164,87 @@ void SerPrintFF(const __FlashStringHelper *fmt, ...);
 // The vertical padding parameter must be at least 1 or no video will be
 // shown.
 Steve::DisplayProfile cfa480128profile(
-  480, 128,   // Width, height
-  24, 11, 6,  // Horizontal front porch, sync width, back porch
-  4, 1, 3,    // Vertical   front porch, sync width, back porch
-  521,        // Extra horizontal clocks per line
-  1,          // Extra lines per frame)
-  7);         // Pixel clock is 60MHz / 7 = ~8.57 MHz
-SteveHAL_Arduino Hal(SPI, 8000000, 9, 8, 7);
-Steve d(cfa480128profile, Hal);
+  480, 24, 11, 6, 521,  // Horizontal width,  front porch, sync width, back porch, padding
+  128,  4,  1, 3,   1,  // Vertical   height, front porch, sync lines, back porch, padding
+  7);                   // Pixel clock is 60 MHz / 7 = ~8.57 MHz
 
-VUDemo vuDemo(d);
+class CFA800480profile : public Steve::DisplayProfile
+{
+  Steve::PinDriveTable pindrivetable;
+
+public:
+  CFA800480profile()
+    : Steve::DisplayProfile(
+      800, 8, 4, 8, 178,  // Width,  front porch, sync width, back porch, padding
+      480, 8, 4, 8, 1,    // Height, front porch, sync lines, back porch, padding
+      2)                  // PCLK divider (72 MHz / 2 = 36 MHz)
+    , pindrivetable()
+  {
+    Steve::PINS low[] = {
+      Steve::PINS_GPIO0,
+      Steve::PINS_GPIO1,
+      Steve::PINS_GPIO2,
+      Steve::PINS_GPIO3,
+      Steve::PINS_DISP,
+      Steve::PINS_DE,
+      Steve::PINS_VSYNC_HSYNC,
+      Steve::PINS_BACKLIGHT,
+      Steve::PINS_RGB,
+      Steve::PINS_AUDIO_L,
+      Steve::PINS_INT_N,
+      Steve::PINS_CTP_RST_N,
+      Steve::PINS_CTP_SCL,
+      Steve::PINS_CTP_SDA,
+      Steve::PINS_SPI,
+      Steve::PINS_SPIM_SS_N,
+      Steve::PINS_SPIM_MISO,
+      Steve::PINS_SPIM_MOSI,
+      Steve::PINS_SPIM_IO2,
+      Steve::PINS_SPIM_IO3,
+    };
+    Steve::PINS medium[] = {
+      Steve::PINS_SPIM_SCLK
+    };
+    Steve::PINS high[] = {
+      Steve::PINS_PCLK
+    };
+
+    pindrivetable.Apply(Steve::PINDRIVE_STRENGTH_LOW,    low,    _countof(low));
+    pindrivetable.Apply(Steve::PINDRIVE_STRENGTH_MEDIUM, medium, _countof(medium));
+    pindrivetable.Apply(Steve::PINDRIVE_STRENGTH_HIGH,   high,   _countof(high));
+
+    _pindrivetable = &pindrivetable;
+
+    _chipid = Steve::CHIPID_BT817;
+    _clksel = Steve::CLKSEL_X6;
+    _frequency = 72000000;
+  }
+} cfa800480profile;
+
+SteveHAL_Arduino Hal(SPI, 8000000, 9, 8);
+//Steve d(cfa480128profile, Hal);
+Steve d(cfa800480profile, Hal);
+
+//VUDemo vuDemo(d);
 BounceDemo bounceDemo(d);
-BmpDemo bmpDemo(d);
+//BmpDemo bmpDemo(d);
+
 
 void setup()
 {
   Serial.begin(115200);
   DBG_STAT("Running\n");
-
   SPI.begin();
 
   DBG_STAT("Begin\n");
   d.Begin();
 
+
+/*
   uint32_t ramaddr = Steve::RAM_G;
   ramaddr = bmpDemo.Init(ramaddr, CLOUDS, sizeof(CLOUDS), CLOUDS_width, CLOUDS_height, Steve::FORMAT_RGB565, 1, -1, -1);
-  ramaddr = vuDemo.Init(1, ramaddr, vu, sizeof(vu), 480, 40, Steve::FORMAT_RGB565, 1);
+  ramaddr = vuDemo.Init(1, ramaddr, vu, sizeof(vu), 480, 40, Steve::FORMAT_ARGB1555, 10);
+  */
   bounceDemo.Init();
 
   DBG_STAT("End Setup\n");
@@ -207,12 +264,12 @@ void loop()
   // Clear the screen (and clear the current color, stencil and tag)
   d.CmdClear(0, 0, 0);
 
-  bmpDemo.AddCommands();
+  //bmpDemo.AddCommands();
   bounceDemo.AddCommands();
-  vuDemo.AddCommands();
+  //vuDemo.AddCommands();
 
-  vuDemo.Cycle();
-  bmpDemo.Cycle();
+  //vuDemo.Cycle();
+  //bmpDemo.Cycle();
   bounceDemo.Cycle();
 
   // Instruct graphics processor to show the list
