@@ -1308,7 +1308,7 @@ protected:
   // initializing the timing registers.
   // Specific subclasses can use this to work around bugs.
   virtual bool                          // Returns true=success false=failure
-    EarlyInit()
+  EarlyInit()
   {
     // EVE_Init_Goodix_GT911()
     // EVE_Init_Pen_Up_Bug_Fix()
@@ -1325,7 +1325,7 @@ protected:
   // can be used for projects that don't require touch, regardless of
   // whether the EVE has touch screen support.
   virtual bool                          // Returns true=success false=failure
-    TouchInit()
+  TouchInit()
   {
     // Disable touch
     RegWrite8(REG_TOUCH_MODE, 0);
@@ -1350,13 +1350,7 @@ public:
     // Wake up the EVE
     DBG_GEEK("Resetting\n");
 
-#if 0
     End();
-#else
-    _hal.Delay(20);                     // Wait a few ms before waking it up
-    _hal.Power(false);                  // Reset
-    _hal.Delay(6);                      // Hold for a little while
-#endif
 
     _hal.Power(true);                   // Power on
     _hal.Delay(21);                     // More holding
