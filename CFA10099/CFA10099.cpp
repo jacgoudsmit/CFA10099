@@ -164,60 +164,47 @@ void SerPrintFF(const __FlashStringHelper *fmt, ...);
 //
 // The vertical padding parameter must be at least 1 or no video will be
 // shown.
-Steve::DisplayProfile cfa480128profile(
+SteveDisplay cfa480128profile(
   480, 24, 11, 6, 521,  // Horizontal width,  front porch, sync width, back porch, padding
   128,  4,  1, 3,   1,  // Vertical   height, front porch, sync lines, back porch, padding
   7);                   // Pixel clock is 60 MHz / 7 = ~8.57 MHz
 
-class CFA800480profile : public Steve::DisplayProfile
+class CFA800480profile : public SteveDisplay
 {
-  Steve::PinDriveTable pindrivetable;
-
 public:
   CFA800480profile()
-    : Steve::DisplayProfile(
+    : SteveDisplay(
       800, 8, 4, 8, 178,  // Width,  front porch, sync width, back porch, padding
       480, 8, 4, 8, 1,    // Height, front porch, sync lines, back porch, padding
       2)                  // PCLK divider (72 MHz / 2 = 36 MHz)
-    , pindrivetable()
   {
-    Steve::PINS low[] = {
-      Steve::PINS_GPIO0,
-      Steve::PINS_GPIO1,
-      Steve::PINS_GPIO2,
-      Steve::PINS_GPIO3,
-      Steve::PINS_DISP,
-      Steve::PINS_DE,
-      Steve::PINS_VSYNC_HSYNC,
-      Steve::PINS_BACKLIGHT,
-      Steve::PINS_RGB,
-      Steve::PINS_AUDIO_L,
-      Steve::PINS_INT_N,
-      Steve::PINS_CTP_RST_N,
-      Steve::PINS_CTP_SCL,
-      Steve::PINS_CTP_SDA,
-      Steve::PINS_SPI,
-      Steve::PINS_SPIM_SS_N,
-      Steve::PINS_SPIM_MISO,
-      Steve::PINS_SPIM_MOSI,
-      Steve::PINS_SPIM_IO2,
-      Steve::PINS_SPIM_IO3,
-    };
-    Steve::PINS medium[] = {
-      Steve::PINS_SPIM_SCLK
-    };
-    Steve::PINS high[] = {
-      Steve::PINS_PCLK
-    };
+    STEVE_USE_PINDRIVE_TABLE_BEGIN
+      STEVE_PINDRIVE(GPIO0,       LOW)
+      STEVE_PINDRIVE(GPIO1,       LOW)
+      STEVE_PINDRIVE(GPIO2,       LOW)
+      STEVE_PINDRIVE(GPIO3,       LOW)
+      STEVE_PINDRIVE(DISP,        LOW)
+      STEVE_PINDRIVE(DE,          LOW)
+      STEVE_PINDRIVE(VSYNC_HSYNC, LOW)
+      STEVE_PINDRIVE(PCLK,        HIGH)
+      STEVE_PINDRIVE(BACKLIGHT,   LOW)
+      STEVE_PINDRIVE(RGB,         LOW)
+      STEVE_PINDRIVE(AUDIO_L,     LOW)
+      STEVE_PINDRIVE(INT_N,       LOW)
+      STEVE_PINDRIVE(CTP_RST_N,   LOW)
+      STEVE_PINDRIVE(CTP_SCL,     LOW)
+      STEVE_PINDRIVE(CTP_SDA,     LOW)
+      STEVE_PINDRIVE(SPI,         LOW)
+      STEVE_PINDRIVE(SPIM_SCLK,   MEDIUM)
+      STEVE_PINDRIVE(SPIM_SS_N,   LOW)
+      STEVE_PINDRIVE(SPIM_MISO,   LOW)
+      STEVE_PINDRIVE(SPIM_MOSI,   LOW)
+      STEVE_PINDRIVE(SPIM_IO2,    LOW)
+      STEVE_PINDRIVE(SPIM_IO3,    LOW)
+    STEVE_USE_PINDRIVE_TABLE_END
 
-    pindrivetable.Apply(Steve::PINDRIVE_STRENGTH_LOW,    low,    _countof(low));
-    pindrivetable.Apply(Steve::PINDRIVE_STRENGTH_MEDIUM, medium, _countof(medium));
-    pindrivetable.Apply(Steve::PINDRIVE_STRENGTH_HIGH,   high,   _countof(high));
-
-    _pindrivetable = &pindrivetable;
-
-    _chipid = Steve::CHIPID_BT817;
-    _clksel = Steve::CLKSEL_X6;
+    _chipid = CHIPID_BT817;
+    _clksel = CLKSEL_X6;
     _frequency = 72000000;
   }
 } cfa800480profile;
