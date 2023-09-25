@@ -6,7 +6,7 @@ These displays are 3.9in 480x128 TFTs.
 Example Seeeduino (Arduino clone) software.   
   
 Kits for these products can be found here:   
-https://www.crystalfontz.com/product/cfaf480128a0039tca12
+https://www.crystalfontz.com/product/cfa480128e0039tckit-480x128-bar-type-tft-dev-kit
 https://www.crystalfontz.com/product/cfaf480128a0039tna12
 
 ## Navigating the Code
@@ -26,13 +26,14 @@ To toggle on or off different demonstrations, some defines in "CFA10099_defines.
 #define TOUCH_DEMO           (0)
 ```
 
-`BMP_DEMO` - Toggled to 1 will look to the uSD card to pull the "SPLASH.RAW" file and display it 
-`BMP_SCROLL` - Toggled to 1 will look to the uSD card to pull the "CLOUDS.RAW" file and display it scrolling accross the screen
-`LOGO_DEMO` - Toggled to 1 will display the Crystalfontz Logo from flash
-`BOUNCE_DEMO` - Toggled to 1 will show a ball bouncing around the screen
-`MARBLE_DEMO` - Toggled to 1 will look in the uSD card and pull "BLUEMARB.RAW" and demonstrate the earth rotating and bouncing around in screen in place of the ball
+`BMP_DEMO` - Toggled to 1 will look to the uSD card to pull the "SPLASH.RAW" file and display it \
+`BMP_SCROLL` - Toggled to 1 will look to the uSD card to pull the "CLOUDS.RAW" file and display it scrolling across the screen\
+`LOGO_DEMO` - Toggled to 1 will display the Crystalfontz Logo from flash\
+`BOUNCE_DEMO` - Toggled to 1 will show a ball bouncing around the screen\
+`MARBLE_DEMO` - Toggled to 1 will look in the uSD card and pull "BLUEMARB.RAW" and demonstrate the earth rotating and bouncing around in screen in place of the ball\
 `TOUCH_DEMO` - Toggled to 1 will enable the touch screen (only compatible on touch versions of the display)
 
+For an in-depth guide to loading custom images on our EVE lineup of displays, please refer to our blog post [available here](https://www.crystalfontz.com/blog/custom-images-on-eve-displays/).
 
 ## Connection Details
 #### To CFA10098 Adapter Board (See kits above)
